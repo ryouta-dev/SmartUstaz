@@ -1,0 +1,946 @@
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var arr = function (x) { return Array.isArray(x) ? x : []; };
+  var str = function (x) { return x == null ? '' : String(x); };
+  var clone = function (o) { return JSON.parse(JSON.stringify(o)); };
+
+  /* ---------- storage (per browser, may be empty) ---------- */
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+  };
+  function cleanProfile(p) {
+    p = p && typeof p === 'object' ? p : {};
+    var out = {};
+    ['timing','pedagogicalApproach','toneAndStyle','styleSummary'].forEach(function (k) { out[k] = str(p[k]).slice(0, 5000); });
+    ['headerFields','terminology','formatRules','notableElements'].forEach(function (k) { out[k] = arr(p[k]).filter(function (x) { return typeof x === 'string'; }).slice(0, 100); });
+    out.structure = arr(p.structure).filter(function (x) { return x && typeof x === 'object' && typeof x.title === 'string'; }).slice(0, 100).map(function (x) { return { title: x.title.slice(0,500), purpose: str(x.purpose).slice(0,3000), approxMinutes: Number.isFinite(x.approxMinutes) && x.approxMinutes > 0 ? x.approxMinutes : null }; });
+    return out;
+  }
+  var userTpls = arr(store.get('su_tpl_v1', [])).filter(function (x) { return x && typeof x.name === 'string' && x.profile; }).map(function (x) { x.profile = cleanProfile(x.profile); return x; });
+  var log = arr(store.get('su_log_v1', [])).filter(function (x) { return x && Number.isFinite(x.manual) && Number.isFinite(x.ms); });
+
+  /* ---------- language ---------- */
+  var lang = store.get('su_lang', null);
+  if (lang !== 'ru' && lang !== 'kk') lang = /^kk/i.test(navigator.language || '') ? 'kk' : 'ru';
+  var D = {
+    brand_sub: ['ТиПО · помощник преподавателя', 'ТжКБ · оқытушы көмекшісі'],
+    ai_wait: ['Ключ не задан', 'Кілт берілмеген'], ai_ok: ['ИИ готов (OpenRouter)', 'ЖИ дайын (OpenRouter)'], ai_off: ['Ключ не задан: см. блок ниже', 'Кілт берілмеген: төмендегі блокты қараңыз'],
+    theme: ['Сменить тему', 'Тақырыпты ауыстыру'],
+    tab_new: ['Создать', 'Жасау'], tab_lib: ['Образцы', 'Үлгілер'], tab_res: ['Результат', 'Нәтиже'],
+    c_kicker: ['Новое занятие', 'Жаңа сабақ'], c_title: ['Меньше рутины. Больше преподавания.', 'Күнделікті жұмыс аз. Оқытуға уақыт көп.'],
+    s1_t: ['Специальность', 'Мамандық'], s1_p: ['Выберите свою специальность. ИИ подберёт примеры и терминологию из вашей профессии.', 'Мамандығыңызды таңдаңыз. ИИ кәсібіңізге сай мысалдар мен терминдерді таңдайды.'],
+    f_prof: ['Специальность из списка', 'Тізімдегі мамандық'], f_spec: ['Специальность и курс', 'Мамандық және курс'], f_mod: ['Дисциплина или модуль', 'Пән немесе модуль'],
+    s2_t: ['Образец', 'Үлгі'], s2_p: ['Выберите свои образцы, и материалы получат вашу структуру. Загрузить образец можно на вкладке «Образцы».', 'Өз үлгілеріңізді таңдаңыз, материалдар сіздің құрылымыңызда болады. Үлгіні «Үлгілер» бетінде жүктей аласыз.'],
+    f_plan_tpl: ['План занятия', 'Сабақ жоспары'], f_notes_tpl: ['Конспект', 'Конспект'], tpl_none: ['Без образца', 'Үлгісіз'],
+    s3_t: ['Тема занятия', 'Сабақ тақырыбы'], f_topic: ['Тема', 'Тақырып'], f_type: ['Тип занятия', 'Сабақ түрі'],
+    ty_combined: ['Комбинированное: теория и практика', 'Аралас: теория және практика'], ty_lab: ['Лабораторно-практическая работа', 'Зертханалық-практикалық жұмыс'], ty_lecture: ['Лекция', 'Дәріс'], ty_seminar: ['Семинар', 'Семинар'],
+    f_len: ['Длительность', 'Ұзақтығы'], len90: ['90 минут (пара)', '90 минут (қос сабақ)'], len45: ['45 минут', '45 минут'], len135: ['135 минут', '135 минут'],
+    f_level: ['Уровень группы', 'Топ деңгейі'], lv_basic: ['Базовый', 'Негізгі'], lv_mid: ['Средний', 'Орташа'], lv_adv: ['Продвинутый', 'Жоғары'],
+    f_lang: ['Язык материалов', 'Материал тілі'], lang_ru: ['Русский', 'Орысша'], lang_kk: ['Казахский', 'Қазақша'],
+    more: ['Дополнительно', 'Қосымша'], f_ctx: ['Опора на рабочую программу', 'Жұмыс бағдарламасына сүйену'],
+    ctx_ph: ['Вставьте выдержку из рабочей программы: список тем, результаты обучения. Материалы будут строиться по ней.', 'Жұмыс оқу бағдарламасынан үзінді қойыңыз: тақырыптар тізімі, оқыту нәтижелері. Материалдар соған сүйеніп жасалады.'],
+    q_case: ['Кейс из практики предприятия', 'Кәсіпорын тәжірибесінен кейс'], q_err: ['Разбор типичных ошибок студентов', 'Студенттердің типтік қателерін талдау'],
+    q_lvl: ['Задания трёх уровней (A, B, C) с ответами для преподавателя', 'Үш деңгейлі (A, B, C) тапсырмалар, оқытушыға арналған жауаптармен'],
+    warn_b: ['Не вводите', 'Енгізбеңіз'], warn_t: ['персональные данные студентов. Всё написанное на этой странице уходит выбранному API-провайдеру.', 'студенттердің жеке деректерін. Бұл бетте жазылғанның бәрі ИИ-ға жіберіледі.'],
+    go: ['Собрать материалы к занятию', 'Сабаққа материалдар жинау'], go_note: ['Обычно это занимает 1–3 минуты.', 'Әдетте 1–3 минут алады.'], stop: ['Остановить', 'Тоқтату'],
+    st1: ['1 План', '1 Жоспар'], st2: ['2 Конспект', '2 Конспект'], st3: ['3 Слайды', '3 Слайдтар'],
+    pr1: ['ИИ думает над планом занятия...', 'ИИ сабақ жоспарын ойластыруда...'], pr2: ['ИИ пишет конспект, кейс и задания...', 'ИИ конспект, кейс және тапсырмалар жазуда...'], pr3: ['ИИ собирает слайды и речь преподавателя...', 'ИИ слайдтар мен оқытушы сөзін жинауда...'],
+    pr_n: ['Шаг {n} из 3. Написано {c} знаков', '{n}-қадам, барлығы 3. Жазылды: {c} таңба'],
+    l_kicker: ['Библиотека преподавателя', 'Оқытушы кітапханасы'], l_title: ['Загрузите свой план, конспект или презентацию', 'Өз жоспарыңызды, конспектіңізді немесе презентацияңызды жүктеңіз'],
+    l_lead: ['ИИ разберёт, как устроен документ: разделы, время, термины, стиль. Структура сохранится, и новые материалы будут собираться в том же виде.', 'ИИ құжаттың құрылымын талдайды: бөлімдер, уақыт, терминдер, стиль. Құрылым сақталады және жаңа материалдар сол түрде жасалады.'],
+    l_file: ['Выбрать файл (.docx, .txt, .md)', 'Файлды таңдау (.docx, .txt, .md)'], l_src: ['Текст образца', 'Үлгі мәтіні'],
+    l_src_ph: ['Файл подставится сюда. Можно вставить текст вручную, в том числе из PDF.', 'Файл осында қойылады. Мәтінді қолмен, оның ішінде PDF-тен қоюға болады.'],
+    l_count: ['{n} знаков. Нужно не меньше 300.', '{n} таңба. Кемінде 300 қажет.'], l_name: ['Название образца', 'Үлгі атауы'], l_name_ph: ['Например: Мой план занятия', 'Мысалы: Менің сабақ жоспарым'],
+    l_type: ['Что это за документ', 'Бұл қандай құжат'], lt_auto: ['Определить автоматически', 'Автоматты түрде анықтау'], lt_plan: ['План занятия', 'Сабақ жоспары'], lt_notes: ['Конспект', 'Конспект'], lt_slides: ['Презентация', 'Презентация'],
+    l_warn_b: ['Не загружайте', 'Жүктемеңіз'], l_warn_t: ['материалы с ФИО, ИИН и оценками студентов. Текст образца отправляется в ИИ для разбора.', 'студенттердің ТАӘ, ЖСН және бағалары бар материалдарды. Үлгі мәтіні талдау үшін ИИ-ға жіберіледі.'],
+    l_go: ['Разобрать и сохранить', 'Талдап, сақтау'], l_ana: ['Разбираю структуру образца...', 'Үлгі құрылымын талдап жатырмын...'], l_ana2: ['ИИ описывает структуру: {c} знаков', 'ИИ құрылымды сипаттауда: {c} таңба'],
+    l_saved: ['Сохранённые образцы', 'Сақталған үлгілер'], l_move: ['Перенос между устройствами', 'Құрылғылар арасында көшіру'],
+    l_move_p: ['Образцы хранятся в этом браузере. Сохраните их файлом, чтобы открыть на другом устройстве.', 'Үлгілер осы браузерде сақталады. Басқа құрылғыда ашу үшін оларды файл ретінде сақтаңыз.'],
+    l_exp: ['Скачать образцы (.json)', 'Үлгілерді жүктеу (.json)'], l_imp: ['Загрузить образцы', 'Үлгілерді жүктеп салу'],
+    tpl_struct: ['Структура образца', 'Үлгі құрылымы'], tpl_more: ['Термины, подход и правила оформления', 'Терминдер, тәсіл және рәсімдеу ережелері'],
+    tpl_time: ['Время', 'Уақыт'], tpl_appr: ['Подход', 'Тәсіл'], tpl_style: ['Стиль', 'Стиль'], tpl_terms: ['Термины', 'Терминдер'], tpl_spec: ['Особый элемент', 'Ерекше элемент'],
+    min: ['мин', 'мин'], tag_ex: ['Пример', 'Мысал'], tpl_del: ['Удалить образец', 'Үлгіні жою'], tpl_del2: ['Нажмите ещё раз для удаления', 'Жою үшін тағы басыңыз'],
+    dt_plan: ['План занятия', 'Сабақ жоспары'], dt_notes: ['Конспект', 'Конспект'], dt_slides: ['Презентация', 'Презентация'], dt_other: ['Документ', 'Құжат'],
+    r_demo_b: ['Учебный пример.', 'Оқу мысалы.'], r_demo_t: ['Тема и суммы вымышлены, пример подготовлен по специальности «Учёт и аудит». Номера счетов и формы документов сверьте с действующим планом счетов и правовыми актами.', 'Тақырып пен сомалар ойдан шығарылған, мысал «Есеп және аудит» мамандығы бойынша дайындалған. Шот нөмірлері мен құжат нысандарын қолданыстағы шоттар жоспарымен және құқықтық актілермен салыстырып тексеріңіз.'],
+    r_draft_b: ['Черновик ИИ.', 'ЖИ қаралымы.'], r_draft_t: ['До занятия проверьте суммы, номера счетов, нормативные ссылки и примеры.', 'Сабаққа дейін сомаларды, шот нөмірлерін, нормативтік сілтемелерді және мысалдарды тексеріңіз.'],
+    r_built: ['Построено по образцам: {n}.', 'Үлгілер бойынша жасалды: {n}.'], r_edit: ['Любой текст ниже можно править нажатием.', 'Төмендегі кез келген мәтінді басып өңдеуге болады.'],
+    r_docx: ['Скачать план и конспект (.docx)', 'Жоспар мен конспектіні жүктеу (.docx)'], r_pptx: ['Скачать презентацию (.pptx)', 'Презентацияны жүктеу (.pptx)'], r_new: ['Новое занятие', 'Жаңа сабақ'],
+    sb_plan: ['План занятия', 'Сабақ жоспары'], sb_notes: ['Конспект и задания', 'Конспект және тапсырмалар'], sb_slides: ['Слайды ({n})', 'Слайдтар ({n})'],
+    tm_demo: ['После вашей генерации здесь появится время, которое заняла сборка материалов, и поле для сравнения с ручной подготовкой. Эти числа можно показать на защите проекта.', 'Сіз материал жасағаннан кейін мұнда жинауға кеткен уақыт және қолмен дайындаумен салыстыру өрісі пайда болады. Бұл сандарды жобаны қорғауда көрсетуге болады.'],
+    tm_t: ['Замер времени', 'Уақытты өлшеу'], tm_p: ['Материалы собраны за {t}. Правка и проверка преподавателем в это время не входят.', 'Материалдар {t} ішінде жиналды. Оқытушының өңдеуі мен тексеруі бұған кірмейді.'],
+    tm_min: ['Сколько минут занимает такая подготовка у вас вручную', 'Мұндай дайындық сізде қолмен неше минут алады'], tm_log: ['Записать в журнал', 'Журналға жазу'], tm_logged: ['Записано', 'Жазылды'],
+    tm_sum0: ['Журнал пуст. Каждая запись показывает, сколько времени вы сэкономили.', 'Журнал бос. Әр жазба қанша уақыт үнемдегеніңізді көрсетеді.'],
+    tm_sum: ['Занятий в журнале: {n}. Сэкономлено всего: {t}.', 'Журналдағы сабақ: {n}. Барлығы үнемделді: {t}.'],
+    u_h: ['ч', 'сағ'], u_m: ['мин', 'мин'], u_s: ['с', 'сек'],
+    d_plan: ['Поурочный план', 'Сабақ жоспары'], d_spec: ['Специальность и курс', 'Мамандық және курс'], d_mod: ['Дисциплина', 'Пән'], d_type: ['Тип занятия', 'Сабақ түрі'], d_meth: ['Методы', 'Әдістер'],
+    d_goals: ['Цели', 'Мақсаттар'], d_crit: ['Критерии оценивания', 'Бағалау өлшемдері'], d_course: ['Ход занятия', 'Сабақ барысы'], d_stage: ['Этап', 'Кезең'], d_teacher: ['Преподаватель', 'Оқытушы'],
+    d_students: ['Студенты', 'Студенттер'], d_res: ['Ресурсы и оценивание', 'Ресурстар және бағалау'], d_hw: ['Домашнее задание', 'Үй тапсырмасы'], d_notes: ['Опорный конспект и практикум', 'Тірек конспект және практикум'],
+    d_case: ['Кейс из практики', 'Тәжірибеден кейс'], d_mist: ['Типичные ошибки студентов', 'Студенттердің типтік қателері'], d_right: ['Как правильно', 'Дұрысы'], d_tasks: ['Практические задания', 'Практикалық тапсырмалар'],
+    d_answer: ['Ответ для преподавателя', 'Оқытушыға арналған жауап'], d_quiz: ['Мини-тест', 'Шағын тест'], d_ans: ['Ответ', 'Жауап'], d_slide: ['Слайд', 'Слайд'], d_speech: ['Речь преподавателя', 'Оқытушы сөзі'],
+    d_footer: ['Черновик подготовлен с помощью ИИ. Требует проверки преподавателем.', 'Жасанды интеллект дайындаған қаралым. Оқытушының тексеруі қажет.'],
+    e_short: ['Образец слишком короткий. Нужно не меньше 300 знаков, лучше целый документ.', 'Үлгі тым қысқа. Кемінде 300 таңба қажет, тұтас құжат жақсырақ.'],
+    e_noai: ['Вставьте ключ OpenRouter в блок «Ключ OpenRouter и модель» выше.', 'Жоғарыдағы OpenRouter кілтін енгізіңіз.'], or_saved: ['Ключ сохранён в этом браузере', 'Кілт осы браузерде сақталды'], or_empty: ['Ключ пуст', 'Кілт бос'], or_cleared: ['Ключ удалён', 'Кілт жойылды'], e_topic: ['Укажите тему занятия.', 'Сабақ тақырыбын көрсетіңіз.'],
+    er_not_granted: ['Доступ к ИИ не разрешён. Разрешите его в окне запроса и запустите снова.', 'ИИ-ға рұқсат берілмеді. Сұрау терезесінде рұқсат беріп, қайта іске қосыңыз.'],
+    er_rate: ['Слишком много запросов или исчерпан лимит. Подождите и повторите.', 'Сұраулар тым көп немесе лимит таусылды. Күтіп, қайталаңыз.'],
+    er_json: ['Ответ пришёл в неверном формате. Нажмите кнопку ещё раз.', 'Жауап қате форматта келді. Түймені қайта басыңыз.'],
+    er_session: ['Ключ OpenRouter не принят. Проверьте его в блоке настроек.', 'OpenRouter кілті қабылданбады. Баптауларды тексеріңіз.'], er_disabled: ['ИИ недоступен для этого аккаунта.', 'ИИ бұл аккаунт үшін қолжетімсіз.'],
+    er_big: ['Текст слишком длинный. Сократите образец или выдержку из программы.', 'Мәтін тым ұзын. Үлгіні немесе бағдарламадан үзіндіні қысқартыңыз.'],
+    er_refused: ['ИИ отказался обработать этот текст. Измените запрос.', 'ИИ бұл мәтінді өңдеуден бас тартты. Сұрауды өзгертіңіз.'],
+    er_other: ['Не получилось. Попробуйте ещё раз.', 'Болмады. Қайталап көріңіз.'],
+    tt_stopped: ['Остановлено', 'Тоқтатылды'], tt_saved: ['Образец разобран и сохранён', 'Үлгі талданып, сақталды'],
+    tt_mem: ['Образец сохранён только до закрытия страницы: браузер не даёт хранить данные.', 'Үлгі бет жабылғанға дейін ғана сақталды: браузер деректерді сақтауға рұқсат бермейді.'],
+    tt_del: ['Образец удалён', 'Үлгі жойылды'], tt_pdf: ['PDF напрямую не читается. Скопируйте текст и вставьте в поле.', 'PDF тікелей оқылмайды. Мәтінді көшіріп, өріске қойыңыз.'],
+    tt_mammoth: ['Модуль чтения Word не загрузился. Вставьте текст вручную.', 'Word оқу модулі жүктелмеді. Мәтінді қолмен қойыңыз.'], tt_readfail: ['Не удалось прочитать файл. Вставьте текст вручную.', 'Файлды оқу мүмкін болмады. Мәтінді қолмен қойыңыз.'],
+    tt_ftype: ['Подходят файлы .docx, .txt, .md', '.docx, .txt, .md файлдары жарайды'], tt_long: ['Файл длинный: взяты первые 30 000 знаков.', 'Файл ұзын: алғашқы 30 000 таңба алынды.'],
+    tt_nodl: ['Сохранение файлов недоступно в этом окне', 'Файлдарды сақтау бұл терезеде қолжетімсіз'], tt_nolib: ['Пока нет своих образцов для сохранения', 'Сақтайтын өз үлгілеріңіз әзірге жоқ'],
+    tt_fsaved: ['Файл сохранён', 'Файл сақталды'], tt_fail: ['Не удалось сохранить файл', 'Файлды сақтау мүмкін болмады'], tt_imp: ['Загружено образцов: {n}', 'Жүктелген үлгілер: {n}'],
+    tt_impno: ['В файле нет подходящих образцов', 'Файлда жарамды үлгілер жоқ'], tt_impfail: ['Не удалось прочитать файл образцов', 'Үлгілер файлын оқу мүмкін болмады'],
+    tt_manual: ['Укажите, сколько минут занимает ручная подготовка', 'Қолмен дайындау неше минут алатынын көрсетіңіз'], tt_logged: ['Записано. Разница: {t}', 'Жазылды. Айырмашылық: {t}'],
+    tt_docx_lib: ['Модуль Word не загрузился. Проверьте соединение и обновите страницу.', 'Word модулі жүктелмеді. Байланысты тексеріп, бетті жаңартыңыз.'],
+    tt_pptx_lib: ['Модуль PowerPoint не загрузился. Проверьте соединение и обновите страницу.', 'PowerPoint модулі жүктелмеді. Байланысты тексеріп, бетті жаңартыңыз.'],
+    tt_docx_fail: ['Не удалось собрать файл Word', 'Word файлын жинау мүмкін болмады'], tt_pptx_fail: ['Не удалось собрать презентацию', 'Презентацияны жинау мүмкін болмады']
+  };
+  Object.assign(D, {"tab_api": ["Настройки", "Баптаулар"], "c_lead": ["От темы занятия до готового комплекта материалов. С вашей структурой, на языке вашей группы.", "Сабақ тақырыбынан дайын материалдар жинағына дейін. Өз құрылымыңызбен, тобыңыздың тілінде."], "api_kicker": ["Подключение ИИ", "ЖИ қосылымы"], "api_title": ["Ваш провайдер. Ваш выбор.", "Провайдерді өзіңіз таңдаңыз."], "api_lead": ["Подключите любой совместимый с OpenAI Chat Completions API сервис.", "OpenAI Chat Completions API интерфейсімен үйлесімді сервисті қосыңыз."], "api_provider": ["Провайдер", "Провайдер"], "api_custom": ["Другой совместимый API", "Басқа үйлесімді API"], "api_base_hint": ["Адрес API с /v1, без /chat/completions. Только HTTPS; HTTP разрешён для localhost.", "/v1 бар API мекенжайы, /chat/completions қоспаңыз. Тек HTTPS; localhost үшін HTTP рұқсат."], "api_key": ["API-ключ (любой формат)", "API кілті (кез келген формат)"], "api_show": ["Показать", "Көрсету"], "api_hide": ["Скрыть", "Жасыру"], "api_model": ["Идентификатор модели", "Модель идентификаторы"], "api_model_hint": ["Точное имя из кабинета провайдера или его списка моделей. Суффикс :free не обязателен.", "Провайдер кабинетіндегі не модельдер тізіміндегі нақты атау. :free міндетті емес."], "api_remember": ["Запомнить ключ на этом устройстве", "Кілтті осы құрылғыда сақтау"], "api_privacy": ["По умолчанию ключ хранится только до закрытия вкладки. Если включить запоминание, он сохраняется в браузере без шифрования. Ключ и материалы отправляются только на выбранный адрес API. Не используйте личные данные студентов.", "Әдепкіде кілт қойынды жабылғанға дейін сақталады. Сақтауды қоссаңыз, ол браузерде шифрланбай сақталады. Кілт пен материалдар тек таңдалған API мекенжайына жіберіледі. Студенттердің жеке деректерін қолданбаңыз."], "api_save": ["Сохранить настройки", "Баптауларды сақтау"], "api_test": ["Проверить подключение", "Қосылымды тексеру"], "api_clear": ["Удалить ключ", "Кілтті жою"], "api_about": ["О подключении", "Қосылым туралы"], "api_cors": ["Это браузерное приложение: сервер провайдера должен разрешать CORS для вашего сайта. Проверка подключения отправляет короткий запрос модели и может расходовать лимит. Произвольный формат ключа допустим, но сам сервис должен принять ключ. Офлайн можно просматривать и редактировать пример; для ИИ и загрузки библиотек экспорта нужен интернет.", "Бұл браузерлік қолданба: провайдер сервері сайтыңыз үшін CORS рұқсатын беруі керек. Тексеру модельге қысқа сұрау жібереді және лимит жұмсауы мүмкін. Кілттің форматы еркін, бірақ сервис оны қабылдауы керек. Офлайн үлгіні көруге және өңдеуге болады; ЖИ мен экспорт кітапханалары үшін интернет қажет."], "ai_ok": ["API настроен · соединение не проверено", "API бапталған · қосылым тексерілмеген"], "ai_off": ["Подключите ИИ в настройках →", "ЖИ-ді баптауларда қосыңыз →"], "e_noai": ["Укажите адрес API, ключ и модель в настройках.", "Баптауларда API мекенжайын, кілтін және моделін көрсетіңіз."], "er_session": ["API отклонил ключ или доступ к модели (401/403). Проверьте настройки.", "API кілтті не модельге қатынауды қабылдамады (401/403). Баптауларды тексеріңіз."], "api_invalid": ["Проверьте Base URL, ключ и модель.", "Base URL, кілт пен модельді тексеріңіз."], "api_saved": ["Настройки применены. Подключение ещё не проверено.", "Баптаулар қолданылды. Қосылым әлі тексерілмеген."], "api_testing": ["Проверяем подключение…", "Қосылым тексерілуде…"], "api_success": ["Модель ответила. Подключение работает.", "Модель жауап берді. Қосылым жұмыс істейді."], "er_network": ["Нет соединения с API: проверьте интернет, адрес и разрешения CORS у провайдера.", "API қосылымы жоқ: интернетті, мекенжайды және провайдердің CORS рұқсатын тексеріңіз."], "er_timeout": ["API не ответил за 120 секунд. Попробуйте другую модель или повторите.", "API 120 секунд ішінде жауап бермеді. Басқа модельді таңдаңыз не қайталаңыз."], "er_truncated": ["Ответ обрезан лимитом модели. Выберите модель с большим лимитом вывода.", "Жауап модель лимитімен қысқартылды. Шығару лимиті жоғары модельді таңдаңыз."], "er_http": ["Ошибка API (HTTP {n}). Проверьте адрес, модель, баланс и доступ.", "API қатесі (HTTP {n}). Мекенжайды, модельді, балансты және рұқсатты тексеріңіз."], "er_shape": ["Модель вернула неполные материалы. Попробуйте ещё раз или смените модель.", "Модель толық емес материалдар қайтарды. Қайталаңыз не модельді ауыстырыңыз."], "tt_draft": ["Черновик сохранён в браузере", "Қаралым браузерде сақталды"], "warn_t": ["персональные данные студентов. Введённые материалы отправляются выбранному API-провайдеру.", "студенттердің жеке деректерін. Енгізілген материалдар таңдалған API провайдеріне жіберіледі."], "s1_p": ["Выберите направление — ИИ адаптирует примеры и терминологию к профессии студентов.", "Бағытты таңдаңыз — ЖИ мысалдар мен терминдерді студенттердің мамандығына бейімдейді."]});
+  function t(k, v) {
+    var s = (D[k] || [k, k])[lang === 'kk' ? 1 : 0];
+    if (v) Object.keys(v).forEach(function (x) { s = s.split('{' + x + '}').join(v[x]); });
+    return s;
+  }
+
+  /* ---------- professions ---------- */
+  var PROF = [
+    { id: 'acc', name: ['Учёт и аудит', 'Есеп және аудит'],
+      spec: { ru: 'Учёт и аудит, 2 курс', kk: 'Есеп және аудит, 2 курс' }, mod: { ru: 'Основы бухгалтерского учёта', kk: 'Бухгалтерлік есеп негіздері' },
+      topic: { ru: 'Принятие товаров от поставщика к учёту: накладная, оплата и проводки', kk: 'Жеткізушіден тауарды есепке қабылдау: жүкқұжат, төлем және бухгалтерлік жазбалар' },
+      hint: 'Для учётных специальностей: в примерах используй суммы в тенге, проводки в виде «Дт … — Кт …» с номерами счетов типового плана счетов Республики Казахстан и названиями счетов, ссылайся на первичные документы. Все суммы пересчитай сам и убедись, что они сходятся.' },
+    { id: 'it', name: ['Программное обеспечение (IT)', 'Бағдарламалық қамтамасыз ету (IT)'],
+      spec: { ru: 'Программное обеспечение, 2 курс', kk: 'Бағдарламалық қамтамасыз ету, 2 курс' }, mod: { ru: 'Разработка и администрирование баз данных', kk: 'Дерекқорларды әзірлеу және әкімшілендіру' },
+      topic: { ru: 'Нормализация реляционных баз данных: 1НФ, 2НФ, 3НФ', kk: 'Реляциялық дерекқорларды нормалау: 1НФ, 2НФ, 3НФ' },
+      hint: 'Для IT-специальностей: давай рабочие фрагменты кода (SQL, Python, JavaScript и т.п.) в виде готовых листингов, разбор типичных ошибок в коде, практику на компьютере, проверяемый результат выполнения. Проверь, что код корректен.' },
+    { id: 'gov', name: ['Государственные закупки', 'Мемлекеттік сатып алу'],
+      spec: { ru: 'Менеджер по государственным закупкам, 2 курс', kk: 'Мемлекеттік сатып алу менеджері, 2 курс' }, mod: { ru: 'Организация государственных закупок', kk: 'Мемлекеттік сатып алуды ұйымдастыру' },
+      topic: { ru: 'Этапы проведения государственной закупки: от плана закупок до заключения договора', kk: 'Мемлекеттік сатып алуды өткізу кезеңдері: сатып алу жоспарынан шарт жасасуға дейін' },
+      hint: 'Для закупочных специальностей: опирайся на законодательство Республики Казахстан о государственных закупках, веб-портал государственных закупок, закупочную документацию, критерии выбора поставщика, протоколы. Не указывай номера статей, пороговые суммы и сроки, если не уверен: пиши «уточнить по действующей редакции закона». Данные заказчиков и поставщиков вымышленные.' },
+    { id: 'bank', name: ['Банковское дело', 'Банк ісі'],
+      spec: { ru: 'Банковское дело, 2 курс', kk: 'Банк ісі, 2 курс' }, mod: { ru: 'Основы банковского дела', kk: 'Банк ісі негіздері' },
+      topic: { ru: 'Виды банковских счетов и порядок открытия счёта клиента', kk: 'Банк шоттарының түрлері және клиент шотын ашу тәртібі' },
+      hint: 'Для банковских специальностей: опирайся на банковские продукты и операции, документы клиента, расчёты, риски и требования к идентификации клиента. Суммы в тенге, данные клиентов вымышленные. Не указывай ставки и лимиты, если не уверен: пиши «уточнить по действующим требованиям».' },
+    { id: 'mgmt', name: ['Менеджмент', 'Менеджмент'],
+      spec: { ru: 'Менеджмент, 2 курс', kk: 'Менеджмент, 2 курс' }, mod: { ru: 'Основы менеджмента', kk: 'Менеджмент негіздері' },
+      topic: { ru: 'Функции менеджмента: планирование, организация, мотивация, контроль', kk: 'Менеджмент функциялары: жоспарлау, ұйымдастыру, уәждеу, бақылау' },
+      hint: 'Для управленческих специальностей: используй ситуации из работы предприятия, управленческие решения, показатели, шаблоны документов. Данные предприятий вымышленные.' },
+    { id: 'other', name: ['Другая специальность', 'Басқа мамандық'], spec: { ru: '', kk: '' }, mod: { ru: '', kk: '' }, topic: { ru: '', kk: '' },
+      hint: 'Подбери примеры и терминологию, которые типичны для указанной специальности.' }
+  ];
+  var profId = store.get('su_prof', 'acc');
+  if (!PROF.some(function (p) { return p.id === profId; })) profId = 'acc';
+  function curProf() { return PROF.filter(function (p) { return p.id === profId; })[0]; }
+  function isDefaultVal(field, val) {
+    val = val.trim(); if (!val) return true;
+    return PROF.some(function (p) { return p[field].ru === val || p[field].kk === val; });
+  }
+  function fillForm(force) {
+    var p = curProf();
+    [['fSpec', 'spec'], ['fMod', 'mod'], ['fTopic', 'topic']].forEach(function (x) {
+      var el = $('#' + x[0]);
+      if (force || isDefaultVal(x[1], el.value)) el.value = p[x[1]][lang];
+    });
+  }
+  function fillProfSelect() {
+    $('#profSel').innerHTML = PROF.map(function (p) {
+      return '<option value="' + p.id + '"' + (p.id === profId ? ' selected' : '') + '>' + esc(p.name[lang === 'kk' ? 1 : 0]) + '</option>';
+    }).join('');
+  }
+
+  /* ---------- example template ---------- */
+  var EX_TPL = {
+    ru: { id: 'example', example: true, docType: 'plan', name: 'Образец колледжа (пример)', profile: {
+      styleSummary: 'Учебный пример разбора. План на пару из пяти этапов с таймингом, отдельными столбцами для действий преподавателя и студентов и домашним заданием. Загрузите свой документ, и здесь появится разбор вашего образца.',
+      structure: [
+        { title: 'Организационный момент', purpose: 'Приветствие, проблемный вопрос по теме', approxMinutes: 7 },
+        { title: 'Актуализация знаний', purpose: 'Короткий опрос по предыдущей теме', approxMinutes: 10 },
+        { title: 'Объяснение нового материала', purpose: 'Разбор на сквозном примере', approxMinutes: 25 },
+        { title: 'Практическая часть', purpose: 'Задания по уровням, работа в парах', approxMinutes: 40 },
+        { title: 'Итоги и рефлексия', purpose: 'Разбор ошибок, мини-тест, домашнее задание', approxMinutes: 8 }],
+      headerFields: ['Дисциплина', 'Тема', 'Цели', 'Тип занятия', 'Методы'], timing: 'Пара 90 минут, практика занимает около 40 процентов времени',
+      terminology: ['Дт/Кт', 'первичный документ', 'корреспонденция счетов'], pedagogicalApproach: 'Разбор реального документа, работа в парах, самопроверка по эталону',
+      toneAndStyle: 'Деловой, короткие предложения, обращение к студенту на «вы»', formatRules: ['Этапы нумеруются и содержат время в скобках', 'Критерии оценивания измеримы'],
+      notableElements: ['Задания трёх уровней', 'Эталонные ответы для преподавателя'] } },
+    kk: { id: 'example', example: true, docType: 'plan', name: 'Колледж үлгісі (мысал)', profile: {
+      styleSummary: 'Оқу мысалы. Бес кезеңнен тұратын, уақыты көрсетілген, оқытушы мен студенттердің әрекеттеріне бөлек бағандары және үй тапсырмасы бар қос сабаққа арналған жоспар. Өз құжатыңызды жүктеңіз, осында сіздің үлгіңіздің талдауы пайда болады.',
+      structure: [
+        { title: 'Ұйымдастыру кезеңі', purpose: 'Сәлемдесу, тақырып бойынша мәселелік сұрақ', approxMinutes: 7 },
+        { title: 'Білімді өзектендіру', purpose: 'Алдыңғы тақырып бойынша қысқа сұрау', approxMinutes: 10 },
+        { title: 'Жаңа материалды түсіндіру', purpose: 'Өзекті мысал арқылы талдау', approxMinutes: 25 },
+        { title: 'Практикалық бөлім', purpose: 'Деңгейлер бойынша тапсырмалар, жұптық жұмыс', approxMinutes: 40 },
+        { title: 'Қорытынды және рефлексия', purpose: 'Қателерді талдау, шағын тест, үй тапсырмасы', approxMinutes: 8 }],
+      headerFields: ['Пән', 'Тақырып', 'Мақсаттар', 'Сабақ түрі', 'Әдістер'], timing: 'Қос сабақ 90 минут, практика уақыттың шамамен 40 пайызын алады',
+      terminology: ['Дт/Кт', 'бастапқы құжат', 'шоттар корреспонденциясы'], pedagogicalApproach: 'Нақты құжатты талдау, жұптық жұмыс, эталон бойынша өзін-өзі тексеру',
+      toneAndStyle: 'Іскерлік, қысқа сөйлемдер, студентке «сіз» деп жүгіну', formatRules: ['Кезеңдер нөмірленеді және жақшада уақыты көрсетіледі', 'Бағалау өлшемдері өлшенетін'],
+      notableElements: ['Үш деңгейлі тапсырмалар', 'Оқытушыға арналған эталон жауаптар'] } }
+  };
+  function allTpls() { return [EX_TPL[lang]].concat(userTpls); }
+
+  /* ---------- ИИ capabilities ---------- */
+  var aiState = 'wait';
+  var dl = {
+    save: function (o) {
+      try {
+        var blob = o.data instanceof Blob ? o.data : new Blob([o.data]);
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = o.filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+        return Promise.resolve({ status: 'saved' });
+      } catch (e) { return Promise.reject({ code: 'bad_request', message: String(e) }); }
+    }
+  };
+  var sample = { json: function (p, o) { return orJson(p, o); } };
+  var memoryKey = '';
+  try { memoryKey = sessionStorage.getItem('su_api_key') || ''; } catch (_) {}
+  memoryKey = memoryKey || String(store.get('or_key', '') || '');
+  function keyNow() { return memoryKey; }
+  var memoryModel = String(store.get('or_model', '') || '');
+  var memoryBase = String(store.get('su_api_base', '') || (memoryModel ? 'https://openrouter.ai/api/v1' : 'https://discovery-api.intern-ai.org.cn/v1'));
+  function modelNow() { return memoryModel; }
+  function baseNow() { return memoryBase; }
+  function validBase(value) {
+    try { var u = new URL(value); return !u.username && !u.password && !u.search && !u.hash && (u.protocol === 'https:' || (u.protocol === 'http:' && ['localhost','127.0.0.1','[::1]'].includes(u.hostname))); } catch (_) { return false; }
+  }
+  function configured() { return !!(keyNow() && modelNow() && validBase(baseNow())); }
+  function refreshAi() { aiState = configured() ? 'ok' : 'off'; syncAi(); }
+  function mkErr(code) { var e = new Error(code); e.code = code; return e; }
+  function parseLoose(text) {
+    var s = String(text).trim();
+    try { return JSON.parse(s); } catch (e) { /* not plain JSON */ }
+    var m = s.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (m) { try { return JSON.parse(m[1]); } catch (e) { /* try next way */ } }
+    var idx = [s.indexOf('{'), s.indexOf('[')].filter(function (i) { return i >= 0; });
+    var b = Math.max(s.lastIndexOf('}'), s.lastIndexOf(']'));
+    if (idx.length && b > Math.min.apply(null, idx)) {
+      try { return JSON.parse(s.slice(Math.min.apply(null, idx), b + 1)); } catch (e) { /* give up below */ }
+    }
+    throw mkErr('invalid_json');
+  }
+  async function requestText(prompt, opts) {
+    opts = opts || {};
+    if (!configured()) throw mkErr('not_granted');
+    var controller = new AbortController(), timedOut = false;
+    var abort = function () { controller.abort(); };
+    if (opts.signal) {
+      if (opts.signal.aborted) throw mkErr('cancelled');
+      opts.signal.addEventListener('abort', abort, { once: true });
+    }
+    var timer = setTimeout(function () { timedOut = true; controller.abort(); }, 120000);
+    try {
+      var res = await fetch(baseNow().replace(/\/+$/, '') + '/chat/completions', {
+        method: 'POST', redirect: 'error', credentials: 'omit', referrerPolicy: 'no-referrer',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + keyNow() },
+        body: JSON.stringify({ model: modelNow(), stream: false, messages: [{ role: 'user', content: prompt }] }),
+        signal: controller.signal
+      });
+      if (!res.ok) {
+        var error = mkErr(res.status === 401 || res.status === 403 ? 'session_expired' : res.status === 429 ? 'rate_limited' : res.status === 413 ? 'prompt_too_large' : 'http'); error.status = res.status; throw error;
+      }
+      var data = await res.json(), choice = data && data.choices && data.choices[0];
+      if (choice && choice.finish_reason === 'length') throw mkErr('truncated');
+      var message = choice && choice.message;
+      if (message && message.refusal) throw mkErr('refused');
+      var text = message && message.content;
+      if (Array.isArray(text)) text = text.map(function (p) { return p.type === 'text' ? p.text : ''; }).join('');
+      if (typeof text !== 'string' || !text.trim()) throw mkErr('invalid_json');
+      if (opts.onText) opts.onText({ text: text });
+      return text;
+    } catch (e) {
+      if (timedOut) throw mkErr('timeout');
+      if (controller.signal.aborted) throw mkErr('cancelled');
+      if (e.code) throw e;
+      throw mkErr(e instanceof SyntaxError ? 'invalid_json' : 'network');
+    } finally {
+      clearTimeout(timer);
+      if (opts.signal) opts.signal.removeEventListener('abort', abort);
+    }
+  }
+  async function orJson(prompt, opts) { return parseLoose(await requestText(prompt + '\nВерни только JSON без пояснений.', opts)); }
+
+  function syncAi() {
+    var el = $('#aiState');
+    el.className = 'ai-state ' + (aiState === 'ok' ? 'ok' : aiState === 'off' ? 'off' : '');
+    el.lastChild.textContent = t(aiState === 'ok' ? 'ai_ok' : aiState === 'off' ? 'ai_off' : 'ai_wait');
+    $('#genGo').disabled = !!ctl || !!ctlA;
+    $('#anaGo').disabled = !!ctl || !!ctlA;
+  }
+
+
+  var toastT;
+  function toast(m) {
+    var el = $('#toast'); el.textContent = m; el.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(function () { el.hidden = true; }, 4200);
+  }
+  function errCopy(e) {
+    var m = { not_granted: 'er_not_granted', rate_limited: 'er_rate', invalid_json: 'er_json', session_expired: 'er_session', sampling_disabled: 'er_disabled', prompt_too_large: 'er_big', refused: 'er_refused' };
+    if (e && e.code === 'http') return t('er_http', { n: e.status });
+    return t(({network:'er_network',timeout:'er_timeout',truncated:'er_truncated',shape:'er_shape'})[e && e.code] || m[e && e.code] || 'er_other');
+  }
+
+  /* ---------- theme ---------- */
+  function effTheme() {
+    var a = document.documentElement.getAttribute('data-theme');
+    if (a) return a;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  function syncTheme() {
+    var dark = effTheme() === 'dark';
+    $('#icoSun').style.display = dark ? '' : 'none';
+    $('#icoMoon').style.display = dark ? 'none' : '';
+  }
+  var savedTheme = store.get('su_theme', null);
+  if (savedTheme === 'dark' || savedTheme === 'light') document.documentElement.setAttribute('data-theme', savedTheme);
+  $('#themeBtn').addEventListener('click', function () {
+    var n = effTheme() === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', n); store.set('su_theme', n); syncTheme();
+  });
+  if (window.matchMedia) {
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq.addEventListener) mq.addEventListener('change', syncTheme);
+  }
+
+  /* ---------- navigation ---------- */
+  function go(name) {
+    ['new', 'lib', 'res', 'api'].forEach(function (n) {
+      $('#v-' + n).hidden = n !== name;
+      $('#t-' + n).setAttribute('aria-selected', String(n === name));
+      $('#t-' + n).tabIndex = n === name ? 0 : -1;
+    });
+    window.scrollTo(0, 0); $('.wrap').scrollTop = 0;
+  }
+  $$('[data-go]').forEach(function (b) { b.addEventListener('click', function () { go(b.dataset.go); }); });
+
+  /* ---------- library ---------- */
+  function docName(k) { return t('dt_' + (D['dt_' + k] ? k : 'other')); }
+  function tplCard(tp) {
+    var p = cleanProfile(tp.profile);
+    return '<article class="sheet tpl" data-id="' + esc(tp.id) + '">' +
+      '<div class="tpl-h"><h3>' + esc(tp.name) + '</h3><span class="tag">' + esc(docName(tp.docType)) + '</span>' +
+      (tp.example ? '<span class="tag ex">' + esc(t('tag_ex')) + '</span>' : '') + '</div>' +
+      '<p>' + esc(p.styleSummary) + '</p>' +
+      '<div class="lbl">' + esc(t('tpl_struct')) + '</div>' +
+      '<ol class="struct">' + arr(p.structure).map(function (s) {
+        return '<li><span><b>' + esc(s.title) + '</b>' + (s.approxMinutes ? ' <span class="mono">' + esc(s.approxMinutes) + ' ' + esc(t('min')) + '</span>' : '') + '</span><span>' + esc(s.purpose) + '</span></li>';
+      }).join('') + '</ol>' +
+      '<details><summary>' + esc(t('tpl_more')) + '</summary><ul>' +
+      (p.timing ? '<li>' + esc(t('tpl_time')) + ': ' + esc(p.timing) + '</li>' : '') +
+      (p.pedagogicalApproach ? '<li>' + esc(t('tpl_appr')) + ': ' + esc(p.pedagogicalApproach) + '</li>' : '') +
+      (p.toneAndStyle ? '<li>' + esc(t('tpl_style')) + ': ' + esc(p.toneAndStyle) + '</li>' : '') +
+      (arr(p.terminology).length ? '<li>' + esc(t('tpl_terms')) + ': ' + arr(p.terminology).map(esc).join(', ') + '</li>' : '') +
+      arr(p.formatRules).map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') +
+      arr(p.notableElements).map(function (r) { return '<li>' + esc(t('tpl_spec')) + ': ' + esc(r) + '</li>'; }).join('') +
+      '</ul></details>' +
+      (tp.example ? '' : '<div class="btns"><button class="btn warn" type="button" data-del="' + esc(tp.id) + '">' + esc(t('tpl_del')) + '</button></div>') +
+      '</article>';
+  }
+  function fillSelects() {
+    var tpls = allTpls();
+    var pv = $('#fPlanTpl').value, nv = $('#fNotesTpl').value;
+    function opts(pref) {
+      return '<option value="">' + esc(t('tpl_none')) + '</option>' + tpls.filter(function (x) { return x.docType === pref; }).map(function (x) {
+        return '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>';
+      }).join('');
+    }
+    $('#fPlanTpl').innerHTML = opts('plan'); $('#fNotesTpl').innerHTML = opts('notes');
+    $('#fPlanTpl').value = pv; $('#fNotesTpl').value = nv;
+  }
+
+  function renderLib() { $('#tplList').innerHTML = allTpls().map(tplCard).join(''); fillSelects(); }
+  var delArm = null;
+  $('#tplList').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-del]'); if (!b) return;
+    var id = b.dataset.del;
+    if (delArm !== id) {
+      delArm = id; b.textContent = t('tpl_del2');
+      setTimeout(function () { if (delArm === id) { delArm = null; if (b.isConnected) b.textContent = t('tpl_del'); } }, 3500);
+      return;
+    }
+    userTpls = userTpls.filter(function (x) { return x.id !== id; });
+    store.set('su_tpl_v1', userTpls); delArm = null; renderLib(); toast(t('tt_del'));
+  });
+  function srcCount() { $('#srcCount').textContent = t('l_count', { n: $('#src').value.length.toLocaleString('ru-RU') }); }
+  $('#src').addEventListener('input', srcCount);
+  $('#file').addEventListener('change', function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { toast(lang === 'kk' ? 'Файл 5 МБ-тан аспауы керек' : 'Максимальный размер файла — 5 МБ'); e.target.value = ''; return; }
+    var n = f.name.toLowerCase();
+    var done = function (text) {
+      $('#src').value = text.slice(0, 30000); srcCount();
+      if (!$('#tplName').value) $('#tplName').value = f.name.replace(/\.[^.]+$/, '').slice(0, 60);
+      if (text.length > 30000) toast(t('tt_long'));
+    };
+    if (n.endsWith('.pdf')) { toast(t('tt_pdf')); e.target.value = ''; return; }
+    if (n.endsWith('.docx')) {
+      if (!window.mammoth) { toast(t('tt_mammoth')); e.target.value = ''; return; }
+      f.arrayBuffer().then(function (ab) { return window.mammoth.extractRawText({ arrayBuffer: ab }); })
+        .then(function (r) { done(r.value || ''); }).catch(function () { toast(t('tt_readfail')); });
+    } else if (/\.(txt|md|csv)$/.test(n)) {
+      f.text().then(done).catch(function () { toast(t('tt_readfail')); });
+    } else { toast(t('tt_ftype')); }
+    e.target.value = '';
+  });
+
+  var ctlA = null;
+  $('#anaStop').addEventListener('click', function () { if (ctlA) ctlA.abort(); });
+  $('#anaGo').addEventListener('click', async function () {
+    var text = $('#src').value.trim();
+    var err = $('#anaErr'); err.hidden = true;
+    if (text.length < 300) { err.textContent = t('e_short'); err.hidden = false; return; }
+    if (!configured()) { err.textContent = t('e_noai'); err.hidden = false; return; }
+    if (ctl || ctlA) return;
+    ctlA = new AbortController(); syncAi();
+    $('#anaProg').hidden = false; $('#anaGo').disabled = true; $('#anaTxt').textContent = t('l_ana');
+    var prompt = 'Ты методист колледжа технического и профессионального образования. Ниже текст документа, который преподаватель использует в работе: план занятия, конспект или презентация. Разбери, как он устроен, чтобы по этому образцу можно было готовить новые материалы в том же виде.\n' +
+      'Не копируй ФИО, ИИН, телефоны и другие персональные данные. Если в тексте нет какого-то признака, оставь пустую строку или пустой список, ничего не выдумывай. Названия и описания пиши на том языке, на котором написан образец.\n' +
+      'Ответь только JSON такой формы:\n' +
+      '{"name":"короткое название образца, до 6 слов","docType":"plan | notes | slides | other","structure":[{"title":"название раздела или этапа","purpose":"что в нём происходит, одной фразой","approxMinutes":число или null}],"headerFields":["поля шапки документа"],"timing":"как распределено время","terminology":["термины и обозначения автора"],"pedagogicalApproach":"методы и подходы автора","toneAndStyle":"тон и стиль изложения","formatRules":["правила оформления, видимые в образце"],"notableElements":["особые элементы: кейсы, уровни заданий, рефлексия и т.п."],"styleSummary":"2-3 предложения о том, чем этот образец отличается от типового"}\n\n' +
+      'Образец:\n"""\n' + text.slice(0, 24000) + '\n"""';
+    try {
+      var prof = await sample.json(prompt, { signal: ctlA.signal, cache: false, onText: function (u) { $('#anaTxt').textContent = t('l_ana2', { c: u.text.length.toLocaleString('ru-RU') }); } });
+      if (!prof || !Array.isArray(prof.structure) || !prof.structure.length) { var bad = new Error('shape'); bad.code = 'invalid_json'; throw bad; }
+      var chosen = $('#tplType').value;
+      var tpl = {
+        id: 't' + Date.now(),
+        name: ($('#tplName').value.trim() || str(prof.name) || 'Образец').slice(0, 80),
+        docType: chosen === 'auto' ? (['plan', 'notes', 'slides'].indexOf(prof.docType) >= 0 ? prof.docType : 'other') : chosen,
+        profile: cleanProfile(prof), added: Date.now()
+      };
+      userTpls.push(tpl);
+      toast(store.set('su_tpl_v1', userTpls) ? t('tt_saved') : t('tt_mem'));
+      $('#src').value = ''; $('#tplName').value = ''; srcCount();
+      renderLib();
+      var card = $('[data-id="' + tpl.id + '"]'); if (card) card.scrollIntoView({ block: 'start' });
+    } catch (e) {
+      if (e && e.code === 'cancelled') toast(t('tt_stopped'));
+      else { err.textContent = errCopy(e); err.hidden = false; }
+    } finally {
+      ctlA = null; $('#anaProg').hidden = true; syncAi();
+    }
+  });
+  $('#libExport').addEventListener('click', function () {
+    if (!dl) { toast(t('tt_nodl')); return; }
+    if (!userTpls.length) { toast(t('tt_nolib')); return; }
+    dl.save({ filename: 'smartustaz-templates.json', data: JSON.stringify(userTpls, null, 2) })
+      .then(function () { toast(t('tt_fsaved')); }).catch(function (e) { if (e && e.code !== 'declined') toast(t('tt_fail')); });
+  });
+  $('#libImport').addEventListener('change', function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { toast(lang === 'kk' ? 'Файл 5 МБ-тан аспауы керек' : 'Максимальный размер файла — 5 МБ'); e.target.value = ''; return; }
+    f.text().then(function (txt) {
+      var data = JSON.parse(txt), added = 0;
+      arr(data).slice(0, 200).forEach(function (x) {
+        if (x && x.profile && Array.isArray(x.profile.structure) && x.name) {
+          userTpls.push({ id: 't' + Date.now() + '_' + (added++), name: str(x.name).slice(0, 80), docType: ['plan', 'notes', 'slides'].indexOf(x.docType) >= 0 ? x.docType : 'other', profile: cleanProfile(x.profile), added: Date.now() });
+        }
+      });
+      store.set('su_tpl_v1', userTpls); renderLib();
+      toast(added ? t('tt_imp', { n: added }) : t('tt_impno'));
+    }).catch(function () { toast(t('tt_impfail')); });
+    e.target.value = '';
+  });
+
+  /* ---------- demo result (учебный пример по специальности «Учёт и аудит») ---------- */
+  var DEMO = {
+    ru: {
+      example: true, ms: 0, manual: '',
+      plan: {
+        topic: 'Принятие товаров от поставщика к учёту: накладная, оплата и проводки',
+        specialty: 'Учёт и аудит, 2 курс', module: 'Основы бухгалтерского учёта',
+        lessonType: 'Комбинированное занятие (теория и практика), 90 минут',
+        methods: 'Разбор реального документа, работа в парах, ситуационные задачи, самопроверка по эталону',
+        goals: [
+          'Образовательная: научить читать накладную на отпуск запасов и определять, какие реквизиты нужны, чтобы принять товар к учёту.',
+          'Развивающая: сформировать навык составления проводок по покупке товаров и расчётам с поставщиком.',
+          'Воспитательная: сформировать привычку проверять документ до записи в учёте и отвечать за точность данных.'],
+        criteria: [
+          'Находит в накладной все обязательные реквизиты и отмечает недостающие.',
+          'Составляет проводки по поступлению товара и оплате поставщику без ошибок в корреспонденции счетов.',
+          'Верно считает сумму оплаты по условию договора: предоплата, отсрочка, оплата траншами.'],
+        stages: [
+          { stage: '1. Организационный и мотивационный этап (7 мин)', teacher: 'Показывает накладную с двумя пропущенными реквизитами и спрашивает: можно ли принять товар к учёту по этому документу?', students: 'Ищут недостатки в документе и высказывают версии.', resources: 'Слайды 1–2, распечатка накладной' },
+          { stage: '2. Повторение плана счетов (10 мин)', teacher: 'Проводит короткий опрос: какие счета участвуют в учёте товаров и расчётов с поставщиками и к какому типу они относятся.', students: 'Называют счёт и его тип: активный или пассивный.', resources: 'Слайд 3, карточки со счетами' },
+          { stage: '3. Объяснение нового материала (25 мин)', teacher: 'Разбирает цепочку: договор, накладная, оприходование, оплата. На числовом примере показывает проводки для оплаты после поступления и для предоплаты.', students: 'Заполняют опорную схему «документ — проводка» и сверяют с примером на доске.', resources: 'Слайды 3–5, опорный конспект' },
+          { stage: '4. Практика по уровням A, B, C (40 мин)', teacher: 'Раздаёт задачи трёх уровней, обходит пары, фиксирует типичные ошибки для разбора.', students: 'Составляют журнал хозяйственных операций и проверяют друг у друга суммы и корреспонденцию счетов.', resources: 'Задания A, B, C, таблица журнала операций, рубрика оценивания' },
+          { stage: '5. Итоги и рефлексия (8 мин)', teacher: 'Разбирает три типичные ошибки из работ студентов, проводит мини-тест из трёх вопросов, выдаёт задание на дом.', students: 'Сверяют решения с эталоном и оценивают себя по критериям.', resources: 'Слайд 6, эталонные ответы' }],
+        homework: 'Найти в договоре поставки условия оплаты и составить журнал операций по закупке на 450 000 ₸: оприходование и оплата двумя траншами.'
+      },
+      notes: {
+        theory: [
+          { heading: '1. Что должно быть в накладной, чтобы принять товар к учёту',
+            content: 'Товар принимают по первичному документу. В накладной проверяют: реквизиты поставщика и покупателя, дату и номер, наименование, количество и цену каждой позиции, итоговую сумму, подписи сдавшего и принявшего. Если реквизита нет или итог не сходится с позициями, документ возвращают поставщику на исправление.\nТочный перечень обязательных реквизитов и актуальные формы документов сверяйте с действующими правовыми актами.',
+            example: 'Проверка итога: 100 мешков × 6 000 ₸ = 600 000 ₸.\nВ документе указано 580 000 ₸, значит документ не принимают.' },
+          { heading: '2. Проводки: покупка товара и расчёт с поставщиком',
+            content: 'Поступление товара увеличивает запасы и одновременно увеличивает долг перед поставщиком. Оплата уменьшает деньги на счёте и уменьшает долг. Для простоты суммы в примере даны без налога на добавленную стоимость.',
+            example: '1) Оприходован товар: Дт 1330 «Товары» — Кт 3310 «Краткосрочная кредиторская задолженность поставщикам и подрядчикам»: 600 000 ₸\n2) Оплата с расчётного счёта: Дт 3310 — Кт 1030 «Деньги на текущих банковских счетах»: 600 000 ₸\n3) Предоплата до поступления: Дт 1610 «Краткосрочные авансы выданные» — Кт 1030: 200 000 ₸' }],
+        caseTitle: 'Склад ТОО «Алтай-Трейд» (название вымышленное)',
+        caseText: 'Бухгалтер оприходовал 100 мешков муки по 6 000 ₸ по накладной без подписи кладовщика. Через месяц поставщик выставил претензию: по его данным, отгружено 120 мешков. Подтвердить количество нечем, потому что подписи принявшего нет.\nВопросы: какое нарушение допустил бухгалтер, чем это грозит предприятию, как нужно было поступить при получении документа.',
+        mistakes: [
+          { mistake: 'Записывают товар по кредиту, а долг поставщику по дебету.', fix: 'Поступление товара увеличивает актив (Дт 1330), долг перед поставщиком увеличивает пассив (Кт 3310). Перед записью определите тип каждого счёта.' },
+          { mistake: 'Принимают накладную, где итог не равен количеству, умноженному на цену.', fix: 'Всегда пересчитывайте итог: 100 × 6 000 = 600 000. При расхождении документ возвращают поставщику.' },
+          { mistake: 'Путают предоплату и оплату после поступления и сразу списывают деньги на счёт 3310.', fix: 'Если товара ещё нет, платёж считается авансом (счёт 1610). Зачесть аванс в долг можно только после поступления товара.' }],
+        tasks: [
+          { level: 'Уровень A (базовый)', task: 'Накладная №17: 50 коробок канцтоваров для перепродажи по 2 400 ₸. Посчитайте сумму и составьте проводку оприходования.', answer: '50 × 2 400 = 120 000 ₸. Дт 1330 — Кт 3310: 120 000 ₸.' },
+          { level: 'Уровень B (профильный)', task: 'Договор предусматривает оплату двумя траншами: 40% при поступлении и остаток через 10 дней. Закупка на 450 000 ₸. Составьте журнал операций из трёх записей.', answer: '40% = 180 000 ₸, остаток 270 000 ₸.\n1) Дт 1330 — Кт 3310: 450 000\n2) Дт 3310 — Кт 1030: 180 000\n3) Дт 3310 — Кт 1030: 270 000' },
+          { level: 'Уровень C (продвинутый)', task: 'Поставщик прислал накладную на 600 000 ₸, но по факту принято 90 мешков из 100 (по 6 000 ₸). Составьте проводку, найдите сумму расхождения и назовите документ, который нужно оформить.', answer: 'Принято 90 × 6 000 = 540 000 ₸: Дт 1330 — Кт 3310: 540 000. Расхождение 60 000 ₸ (10 мешков) оформляют актом о расхождении при приёмке и направляют поставщику претензию. Порядок оформления сверьте с учётной политикой предприятия.' }],
+        quiz: [
+          { question: 'Какой счёт и по какой стороне увеличивается при поступлении товара от поставщика?', answer: 'Счёт товаров 1330 увеличивается по дебету.' },
+          { question: 'Что делать, если итог накладной не равен сумме по позициям?', answer: 'Не принимать документ к учёту и вернуть поставщику на исправление.' },
+          { question: 'Как отразить оплату поставщику до поступления товара?', answer: 'Как аванс выданный: Дт 1610 — Кт 1030.' }]
+      },
+      slides: [
+        { title: 'Принимаем товар к учёту: документ, проводка, оплата', bullets: ['Тема: расчёты с поставщиками', 'Цель: правильно принять товар и составить проводки', 'Что делаем: разбор накладной и три задачи', 'Итог: журнал операций по закупке'], example: 'Закупка: 100 мешков × 6 000 ₸ = 600 000 ₸', notes: 'Сегодня вы работаете как бухгалтер склада: получаете документ, проверяете его и записываете в учёт. Начнём с вопроса: можно ли принять товар по документу, который я сейчас покажу?' },
+        { title: 'Накладная: что проверяем', bullets: ['Поставщик и покупатель, дата, номер', 'Наименование, количество и цена каждой позиции', 'Итог равен сумме по позициям', 'Подписи сдавшего и принявшего'], example: '100 × 6 000 = 600 000 ₸\nВ документе 580 000 ₸ → возврат поставщику', notes: 'Проверяйте документ до записи в учёте. Посчитайте итог сами: если он не сходится, документ не принимается. Подписи принявшего и сдавшего подтверждают, что товар действительно получен.' },
+        { title: 'Счета: товары и поставщики', bullets: ['1330 Товары: актив, растёт по дебету', '3310 Задолженность поставщикам: пассив, растёт по кредиту', '1030 Деньги на расчётном счёте: актив', 'Тип счёта подсказывает сторону записи'], example: 'Дт 1330 — Кт 3310: 600 000 ₸', notes: 'Прежде чем писать проводку, спросите себя: какой тип у каждого счёта. Актив растёт по дебету, пассив растёт по кредиту. Это снимает большую часть ошибок.' },
+        { title: 'Оплата после поступления', bullets: ['Поступил товар: растёт склад и растёт долг', 'Оплатили: уменьшаются деньги и долг', 'После оплаты долг перед поставщиком равен нулю', 'Проверка: оборот Дт 3310 равен обороту Кт 3310'], example: 'Дт 3310 — Кт 1030: 600 000 ₸', notes: 'Посмотрите, как закрывается долг. Мы получили товар, записали долг, затем заплатили и долг исчез. Если после оплаты на счёте 3310 остаток, ищите ошибку в сумме.' },
+        { title: 'Предоплата поставщику', bullets: ['Товара ещё нет, значит это аванс', 'Аванс учитывают на счёте 1610', 'После поступления аванс засчитывают в долг', 'Не списывайте предоплату сразу на 3310'], example: 'Дт 1610 — Кт 1030: 200 000 ₸', notes: 'Предоплата и оплата после поступления выглядят в банке одинаково, а в учёте это разные записи. Пока товара нет, поставщик нам должен товар, и это аванс.' },
+        { title: 'Практика и типичные ошибки', bullets: ['Уровень A: сумма и одна проводка', 'Уровень B: оплата двумя траншами', 'Уровень C: недостача при приёмке', 'Сверяем ответы по эталону'], example: 'Время: 40 минут. Выберите свой уровень.', notes: 'Выберите уровень и работайте в парах. Один составляет проводки, второй проверяет суммы и стороны счетов, потом меняетесь. Я буду ходить по рядам и записывать типичные ошибки для разбора.' }]
+    },
+    kk: {
+      example: true, ms: 0, manual: '',
+      plan: {
+        topic: 'Жеткізушіден тауарды есепке қабылдау: жүкқұжат, төлем және бухгалтерлік жазбалар',
+        specialty: 'Есеп және аудит, 2 курс', module: 'Бухгалтерлік есеп негіздері',
+        lessonType: 'Аралас сабақ (теория және практика), 90 минут',
+        methods: 'Нақты құжатты талдау, жұптық жұмыс, жағдаяттық есептер, эталон бойынша өзін-өзі тексеру',
+        goals: [
+          'Білімдік: тауарды есепке қабылдау үшін жүкқұжатта қандай деректемелер болу керегін анықтай білуге үйрету.',
+          'Дамытушылық: тауар сатып алу және жеткізушімен есеп айырысу бойынша бухгалтерлік жазбаларды құрастыру дағдысын қалыптастыру.',
+          'Тәрбиелік: құжатты есепке жазар алдында тексеру әдетін және деректердің дәлдігі үшін жауапкершілікті қалыптастыру.'],
+        criteria: [
+          'Жүкқұжаттағы барлық міндетті деректемелерді тауып, жетіспейтіндерін белгілейді.',
+          'Тауардың түсуі мен жеткізушіге төлем бойынша бухгалтерлік жазбаларды шоттар корреспонденциясында қатесіз құрастырады.',
+          'Шарт талабы бойынша төлем сомасын дұрыс есептейді: алдын ала төлем, кейінге қалдыру, бөліп төлеу.'],
+        stages: [
+          { stage: '1. Ұйымдастыру және уәждеу кезеңі (7 мин)', teacher: 'Екі деректемесі жоқ жүкқұжатты көрсетіп, сұрақ қояды: осы құжат бойынша тауарды есепке қабылдауға бола ма?', students: 'Құжаттағы кемшіліктерді іздейді, өз болжамдарын айтады.', resources: '1–2 слайд, жүкқұжат көшірмесі' },
+          { stage: '2. Шоттар жоспарын қайталау (10 мин)', teacher: 'Қысқа сұрау өткізеді: тауарларды және жеткізушілермен есеп айырысуды есепке алуға қандай шоттар қатысады, олар қандай түрге жатады.', students: 'Шоттың нөмірі мен түрін атайды: активті немесе пассивті.', resources: '3 слайд, шоттар карточкалары' },
+          { stage: '3. Жаңа материалды түсіндіру (25 мин)', teacher: 'Тізбекті талдайды: шарт, жүкқұжат, кіріске алу, төлем. Сандық мысалда түскеннен кейінгі төлем және алдын ала төлем жазбаларын көрсетеді.', students: '«Құжат — бухгалтерлік жазба» тірек сызбасын толтырады, тақтадағы мысалмен салыстырады.', resources: '3–5 слайд, тірек конспект' },
+          { stage: '4. A, B, C деңгейлері бойынша практика (40 мин)', teacher: 'Үш деңгейлі есептерді таратады, жұптарды аралап, типтік қателерді талдауға жазып алады.', students: 'Шаруашылық операциялар журналын құрастырады, жұбының сомалары мен шоттар корреспонденциясын тексереді.', resources: 'A, B, C тапсырмалары, операциялар журналының кестесі, бағалау рубрикасы' },
+          { stage: '5. Қорытынды және рефлексия (8 мин)', teacher: 'Студенттер жұмыстарындағы үш типтік қатені талдайды, үш сұрақтан тұратын шағын тест өткізеді, үй тапсырмасын береді.', students: 'Шешімдерін эталонмен салыстырады, өздерін өлшемдер бойынша бағалайды.', resources: '6 слайд, эталон жауаптар' }],
+        homework: 'Жеткізу шартынан төлем талаптарын тауып, 450 000 ₸ сатып алу бойынша операциялар журналын құрастыру: кіріске алу және екі бөліп төлеу.'
+      },
+      notes: {
+        theory: [
+          { heading: '1. Тауарды есепке қабылдау үшін жүкқұжатта не болуы керек',
+            content: 'Тауар бастапқы құжат бойынша қабылданады. Жүкқұжатта мыналар тексеріледі: жеткізуші мен сатып алушының деректемелері, күні мен нөмірі, әр жолдың атауы, саны және бағасы, жалпы сома, тапсырушы мен қабылдаушының қолдары. Деректеме жоқ болса немесе жалпы сома жолдармен сәйкес келмесе, құжат түзету үшін жеткізушіге қайтарылады.\nМіндетті деректемелердің нақты тізімін және құжаттардың өзекті нысандарын қолданыстағы құқықтық актілермен салыстырып тексеріңіз.',
+            example: 'Жалпы соманы тексеру: 100 қап × 6 000 ₸ = 600 000 ₸.\nҚұжатта 580 000 ₸ көрсетілген, демек құжат қабылданбайды.' },
+          { heading: '2. Бухгалтерлік жазбалар: тауар сатып алу және жеткізушімен есеп айырысу',
+            content: 'Тауардың түсуі қорларды да, жеткізушінің алдындағы берешекті де арттырады. Төлем есеп айырысу шотындағы ақшаны да, берешекті де азайтады. Қарапайымдылық үшін мысалдағы сомалар қосылған құн салығынсыз берілген.',
+            example: '1) Тауар кіріске алынды: Дт 1330 «Тауарлар» — Кт 3310 «Жеткізушілер мен мердігерлердің алдындағы қысқа мерзімді кредиторлық берешек»: 600 000 ₸\n2) Есеп айырысу шотынан төлем: Дт 3310 — Кт 1030 «Ағымдағы банк шоттарындағы ақша»: 600 000 ₸\n3) Тауар түскенге дейінгі алдын ала төлем: Дт 1610 «Берілген қысқа мерзімді аванстар» — Кт 1030: 200 000 ₸' }],
+        caseTitle: '«Алтай-Трейд» ЖШС қоймасы (атауы ойдан шығарылған)',
+        caseText: 'Бухгалтер қоймашының қолы жоқ жүкқұжат бойынша бағасы 6 000 ₸ болатын 100 қап ұнды кіріске алды. Бір айдан кейін жеткізуші талап қойды: оның деректері бойынша 120 қап жөнелтілген. Санын растайтын ештеңе жоқ, себебі қабылдаушының қолы қойылмаған.\nСұрақтар: бухгалтер қандай бұзушылыққа жол берді, бұл кәсіпорынға немен қауіп төндіреді, құжатты алған кезде қалай әрекет ету керек еді.',
+        mistakes: [
+          { mistake: 'Тауарды кредит бойынша, ал жеткізушінің алдындағы берешекті дебет бойынша жазады.', fix: 'Тауардың түсуі активті (Дт 1330), жеткізушінің алдындағы берешек пассивті (Кт 3310) арттырады. Жазбадан бұрын әр шоттың түрін анықтаңыз.' },
+          { mistake: 'Жалпы сомасы саны мен бағасының көбейтіндісіне тең емес жүкқұжатты қабылдайды.', fix: 'Жалпы соманы әрқашан қайта есептеңіз: 100 × 6 000 = 600 000. Сәйкес келмесе, құжат жеткізушіге қайтарылады.' },
+          { mistake: 'Алдын ала төлем мен тауар түскеннен кейінгі төлемді шатастырып, ақшаны бірден 3310 шотына есептен шығарады.', fix: 'Тауар әлі жоқ болса, төлем аванс болып саналады (1610 шот). Авансты берешекке тауар түскеннен кейін ғана есепке алуға болады.' }],
+        tasks: [
+          { level: 'A деңгейі (негізгі)', task: '№17 жүкқұжат: қайта сатуға арналған 50 қорап кеңсе тауарлары, бағасы 2 400 ₸. Соманы есептеп, кіріске алу жазбасын құрастырыңыз.', answer: '50 × 2 400 = 120 000 ₸. Дт 1330 — Кт 3310: 120 000 ₸.' },
+          { level: 'B деңгейі (кәсіби)', task: 'Шартта екі бөліп төлеу көзделген: түскен кезде 40%, қалғаны 10 күннен кейін. Сатып алу 450 000 ₸. Үш жазбадан тұратын операциялар журналын құрастырыңыз.', answer: '40% = 180 000 ₸, қалғаны 270 000 ₸.\n1) Дт 1330 — Кт 3310: 450 000\n2) Дт 3310 — Кт 1030: 180 000\n3) Дт 3310 — Кт 1030: 270 000' },
+          { level: 'C деңгейі (жоғары)', task: 'Жеткізуші 600 000 ₸ жүкқұжат жіберді, бірақ іс жүзінде 100 қаптың 90-ы (бағасы 6 000 ₸) қабылданды. Жазбаны құрастырыңыз, алшақтық сомасын табыңыз және ресімдеу қажет құжатты атаңыз.', answer: 'Қабылданғаны 90 × 6 000 = 540 000 ₸: Дт 1330 — Кт 3310: 540 000. Алшақтық 60 000 ₸ (10 қап) қабылдау кезіндегі алшақтық актісімен ресімделеді, жеткізушіге талап жіберіледі. Ресімдеу тәртібін кәсіпорынның есеп саясатымен салыстырып тексеріңіз.' }],
+        quiz: [
+          { question: 'Жеткізушіден тауар түскенде қандай шот және қай жағы артады?', answer: 'Тауарлар шоты 1330 дебет бойынша артады.' },
+          { question: 'Жүкқұжаттың жалпы сомасы жолдардағы соманың қосындысына тең болмаса, не істеу керек?', answer: 'Құжатты есепке қабылдамай, түзету үшін жеткізушіге қайтару.' },
+          { question: 'Тауар түскенге дейін жеткізушіге төленген төлемді қалай көрсетуге болады?', answer: 'Берілген аванс ретінде: Дт 1610 — Кт 1030.' }]
+      },
+      slides: [
+        { title: 'Тауарды есепке қабылдаймыз: құжат, жазба, төлем', bullets: ['Тақырып: жеткізушілермен есеп айырысу', 'Мақсат: тауарды дұрыс қабылдап, жазбаларды құрастыру', 'Не істейміз: жүкқұжатты талдау және үш есеп', 'Қорытынды: сатып алу бойынша операциялар журналы'], example: 'Сатып алу: 100 қап × 6 000 ₸ = 600 000 ₸', notes: 'Бүгін сіздер қойма бухгалтері болып жұмыс істейсіздер: құжат алып, тексеріп, есепке жазасыздар. Сұрақтан бастайық: қазір көрсететін құжат бойынша тауарды қабылдауға бола ма?' },
+        { title: 'Жүкқұжат: нені тексереміз', bullets: ['Жеткізуші мен сатып алушы, күні, нөмірі', 'Әр жолдың атауы, саны және бағасы', 'Жалпы сома жолдардың қосындысына тең', 'Тапсырушы мен қабылдаушының қолдары'], example: '100 × 6 000 = 600 000 ₸\nҚұжатта 580 000 ₸ → жеткізушіге қайтару', notes: 'Есепке жазбас бұрын құжатты тексеріңіз. Жалпы соманы өзіңіз есептеңіз: сәйкес келмесе, құжат қабылданбайды. Қабылдаушы мен тапсырушының қолдары тауардың шынымен алынғанын растайды.' },
+        { title: 'Шоттар: тауарлар және жеткізушілер', bullets: ['1330 Тауарлар: активті, дебет бойынша артады', '3310 Жеткізушілердің алдындағы берешек: пассивті, кредит бойынша артады', '1030 Есеп айырысу шотындағы ақша: активті', 'Шоттың түрі жазба жағын көрсетеді'], example: 'Дт 1330 — Кт 3310: 600 000 ₸', notes: 'Жазба жазбас бұрын өзіңізден сұраңыз: әр шоттың түрі қандай. Актив дебет бойынша, пассив кредит бойынша артады. Бұл қателердің басым бөлігін болдырмайды.' },
+        { title: 'Тауар түскеннен кейінгі төлем', bullets: ['Тауар түсті: қойма да, берешек те артады', 'Төледік: ақша да, берешек те азаяды', 'Төлемнен кейін жеткізушінің алдындағы берешек нөлге тең', 'Тексеру: 3310 бойынша дебет айналымы кредит айналымына тең'], example: 'Дт 3310 — Кт 1030: 600 000 ₸', notes: 'Берешектің қалай жабылатынына қараңыз. Тауар алдық, берешекті жаздық, содан кейін төледік және берешек жойылды. Төлемнен кейін 3310 шотында қалдық болса, соманы тексеріңіз.' },
+        { title: 'Жеткізушіге алдын ала төлем', bullets: ['Тауар әлі жоқ, демек бұл аванс', 'Авансты 1610 шотында есепке алады', 'Тауар түскеннен кейін аванс берешекке есепке алынады', 'Алдын ала төлемді бірден 3310 шотына жазбаңыз'], example: 'Дт 1610 — Кт 1030: 200 000 ₸', notes: 'Алдын ала төлем мен тауар түскеннен кейінгі төлем банкте бірдей көрінеді, ал есепте бұл әртүрлі жазбалар. Тауар жоқ кезде жеткізуші бізге тауар беруге міндетті, бұл аванс.' },
+        { title: 'Практика және типтік қателер', bullets: ['A деңгейі: сома және бір жазба', 'B деңгейі: екі бөліп төлеу', 'C деңгейі: қабылдау кезіндегі жетіспеушілік', 'Жауаптарды эталонмен салыстырамыз'], example: 'Уақыты: 40 минут. Өз деңгейіңізді таңдаңыз.', notes: 'Деңгейді таңдап, жұппен жұмыс істеңіз. Біреуі жазбаларды құрастырады, екіншісі сомалар мен шот жақтарын тексереді, содан кейін орын ауыстырасыздар. Мен қатарларды аралап, талдауға типтік қателерді жазып аламын.' }]
+    }
+  };
+  var cur = clone(DEMO[lang]);
+  try { var draft = store.get('su_result_v2', null); if (draft && draft.plan && draft.notes && Array.isArray(draft.slides) && Array.isArray(draft.plan.stages) && Array.isArray(draft.notes.theory)) { cur = { example: !!draft.example, ms: Number(draft.ms) || 0, manual: str(draft.manual), logged: !!draft.logged, plan: normPlan(draft.plan), notes: normNotes(Object.assign({}, draft.notes, { case: {title: draft.notes.caseTitle, text: draft.notes.caseText} })), slides: normSlides(draft.slides), tpls: arr(draft.tpls).map(str) }; } } catch (_) {}
+  function saveDraft() { return store.set('su_result_v2', cur); }
+  var sub = 'plan';
+
+  /* ---------- generation ---------- */
+  var ctl = null;
+  var TYPE_RU = { combined: 'Комбинированное занятие (теория и практика)', lab: 'Лабораторно-практическая работа', lecture: 'Лекция', seminar: 'Семинар' };
+  var LEVEL_RU = { basic: 'Базовый', mid: 'Средний', adv: 'Продвинутый' };
+  function formVals() {
+    return {
+      spec: $('#fSpec').value.trim() || 'не указана', mod: $('#fMod').value.trim() || 'не указана', topic: $('#fTopic').value.trim(),
+      type: TYPE_RU[$('#fType').value] || TYPE_RU.combined, len: $('#fLen').value, lang: $('#fLang').value === 'kk' ? 'Казахский' : 'Русский',
+      level: LEVEL_RU[$('#fLevel').value] || 'Средний', ctx: $('#fCtx').value.trim().slice(0, 8000),
+      cCase: $('#cCase').checked, cErr: $('#cErr').checked, cLvl: $('#cLvl').checked
+    };
+  }
+  function tplById(id) { var l = allTpls().filter(function (x) { return x.id === id; }); return l[0] || null; }
+  function rules(v) {
+    return 'Ты методист колледжа технического и профессионального образования Республики Казахстан и преподаватель-практик. Готовишь материалы для живого занятия, а не общий пересказ темы.\n' +
+      'Специальность и курс: ' + v.spec + '. Дисциплина: ' + v.mod + '. Тема: ' + v.topic + '. Тип занятия: ' + v.type + ', ' + v.len + ' минут. Уровень группы: ' + v.level + '. Язык материалов: ' + v.lang + '.\n' +
+      (v.lang === 'Казахский' ? 'Пиши на литературном казахском языке. Профессиональные термины давай в виде, принятом в Казахстане, при необходимости с русским термином в скобках.\n' : '') +
+      (v.ctx ? 'Рабочая программа преподавателя (строй материал по ней):\n"""' + v.ctx + '"""\n' : '') +
+      'Требования к качеству: конкретные примеры из профессии студентов, реальные документы и числа, терминология отрасли. Никакой воды и общих фраз. Пиши так, как преподаватель сможет сразу использовать на паре.\n' +
+      curProf().hint + '\n' +
+      'Не выдумывай номера приказов, статей законов, ставок и форм документов. Если не уверен в норме или номере, напиши «уточнить по действующей редакции». Не используй персональные данные. Ответ только JSON, без пояснений.';
+  }
+  function tplHint(tp, what) {
+    if (!tp) return '';
+    return '\nОбразец преподавателя («' + tp.name + '»). Построй ' + what + ' по его структуре, времени, терминологии и стилю. Разбор образца:\n' + JSON.stringify(tp.profile).slice(0, 5000) + '\n';
+  }
+  function setStep(n) {
+    [1, 2, 3].forEach(function (i) { $('#s' + i).className = i < n ? 'done' : i === n ? 'on' : ''; });
+    $('#progChars').textContent = t('pr' + n);
+  }
+  async function ask(prompt, step) {
+    setStep(step);
+    return sample.json(prompt, {
+      signal: ctl.signal, cache: false,
+      onText: function (u) { $('#progChars').textContent = t('pr_n', { n: step, c: u.text.length.toLocaleString('ru-RU') }); }
+    });
+  }
+  function normPlan(p) {
+    p = p || {};
+    return {
+      topic: str(p.topic), specialty: str(p.specialty), module: str(p.module), lessonType: str(p.lessonType), methods: str(p.methods),
+      goals: arr(p.goals).map(str), criteria: arr(p.criteria).map(str),
+      stages: arr(p.stages).map(function (s) { s = s || {}; return { stage: str(s.stage), teacher: str(s.teacher), students: str(s.students), resources: str(s.resources) }; }),
+      homework: str(p.homework)
+    };
+  }
+  function normNotes(n) {
+    n = n || {}; var c = n['case'] || {};
+    return {
+      theory: arr(n.theory).map(function (x) { x = x || {}; return { heading: str(x.heading), content: str(x.content), example: str(x.example) }; }),
+      caseTitle: str(c.title), caseText: str(c.text),
+      mistakes: arr(n.mistakes).map(function (m) { m = m || {}; return { mistake: str(m.mistake), fix: str(m.fix) }; }),
+      tasks: arr(n.tasks).map(function (x) { x = x || {}; return { level: str(x.level), task: str(x.task), answer: str(x.answer) }; }),
+      quiz: arr(n.quiz).map(function (q) { q = q || {}; return { question: str(q.question), answer: str(q.answer) }; })
+    };
+  }
+  function normSlides(s) {
+    var l = Array.isArray(s) ? s : arr(s && s.slides);
+    return l.map(function (x) { x = x || {}; return { title: str(x.title), bullets: arr(x.bullets).map(str), example: str(x.example), notes: str(x.notes) }; });
+  }
+  $('#genStop').addEventListener('click', function () { if (ctl) ctl.abort(); });
+  $('#genGo').addEventListener('click', async function () {
+    var err = $('#genErr'); err.hidden = true;
+    var v = formVals();
+    if (v.topic.length < 5) { err.textContent = t('e_topic'); err.hidden = false; return; }
+    if (!configured()) { err.textContent = t('e_noai'); err.hidden = false; return; }
+    if (ctl || ctlA) return;
+    ctl = new AbortController(); syncAi();
+    $('#genProg').hidden = false; $('#genGo').disabled = true; setStep(1);
+    $('#genProg').scrollIntoView({ block: 'center' });
+    var t0 = Date.now(), pT = tplById($('#fPlanTpl').value), nT = tplById($('#fNotesTpl').value);
+    try {
+      var planPrompt = rules(v) + tplHint(pT, 'план занятия') +
+        '\nСоставь поурочный план. Этапы должны в сумме давать ровно ' + v.len + ' минут, время указывай в названии этапа в скобках. Практика занимает не меньше трети времени. Цели в формате «Образовательная / Развивающая / Воспитательная», критерии оценивания измеримы.\n' +
+        'Формат JSON: {"topic":"","specialty":"","module":"","lessonType":"","methods":"","goals":["",""],"criteria":["",""],"stages":[{"stage":"1. Название (N мин)","teacher":"что делает преподаватель","students":"что делают студенты","resources":"ресурсы и формы оценивания"}],"homework":""}';
+      var plan = normPlan(await ask(planPrompt, 1));
+      if (!plan.topic || !plan.stages.length || !plan.goals.length || !plan.criteria.length || plan.stages.some(function (s) { return !s.stage || !s.teacher || !s.students; })) { var e1 = new Error('x'); e1.code = 'invalid_json'; throw e1; }
+
+      var notesPrompt = rules(v) + tplHint(nT, 'конспект') +
+        '\nПлан занятия уже составлен: ' + JSON.stringify(plan.stages.map(function (s) { return s.stage; })) + '. Напиши опорный конспект к этому занятию: ' +
+        'два содержательных раздела теории, в каждом поле example с примером, расчётом, схемой или кодом.' +
+        (v.cCase ? ' Добавь реальный кейс из практики предприятия (названия вымышленные) с вопросами для обсуждения.' : ' Поле case оставь с пустыми строками.') +
+        (v.cErr ? ' Добавь три типичные ошибки студентов с объяснением, как правильно.' : ' Поле mistakes оставь пустым списком.') +
+        (v.cLvl ? ' Добавь три задания уровней A, B, C и для каждого эталонный ответ для преподавателя с расчётом.' : ' Добавь одно практическое задание с ответом.') +
+        ' Добавь три вопроса мини-теста с эталонными ответами.\n' +
+        'Формат JSON: {"theory":[{"heading":"","content":"","example":""}],"case":{"title":"","text":""},"mistakes":[{"mistake":"","fix":""}],"tasks":[{"level":"Уровень A (базовый)","task":"","answer":""}],"quiz":[{"question":"","answer":""}]}';
+      var notes = normNotes(await ask(notesPrompt, 2));
+      if (!notes.theory.length || !notes.tasks.length || !notes.quiz.length || notes.theory.some(function (x) { return !x.heading || !x.content; })) throw mkErr('shape');
+      if (!v.cCase) { notes.caseTitle = ''; notes.caseText = ''; }
+      if (!v.cErr) notes.mistakes = [];
+
+      var slidesPrompt = rules(v) +
+        '\nСделай шесть слайдов презентации для этого занятия. Тезисы короткие, на слайде не больше четырёх тезисов. Поле example содержит расчёт, схему, код или пример для экрана. В поле notes дай живую речь преподавателя на 2–3 предложения. Последний слайд про практику и типичные ошибки.\n' +
+        'План занятия: ' + JSON.stringify(plan.stages.map(function (s) { return s.stage; })) + '. Заголовки разделов конспекта: ' + JSON.stringify(notes.theory.map(function (x) { return x.heading; })) + '.\n' +
+        'Формат JSON: [{"title":"","bullets":["","","",""],"example":"","notes":""}]';
+      var slides = normSlides(await ask(slidesPrompt, 3));
+      if (!slides.length || slides.some(function (s) { return !s.title || !s.bullets.length; })) { var e2 = new Error('x'); e2.code = 'invalid_json'; throw e2; }
+
+      cur = { example: false, ms: Date.now() - t0, manual: '', logged: false, plan: plan, notes: notes, slides: slides, tpls: [pT && pT.name, nT && nT.name].filter(Boolean) };
+      saveDraft(); sub = 'plan'; renderRes(); go('res');
+    } catch (e) {
+      if (e && e.code === 'cancelled') toast(t('tt_stopped'));
+      else { err.textContent = errCopy(e); err.hidden = false; }
+    } finally {
+      ctl = null; $('#genProg').hidden = true; syncAi();
+    }
+  });
+
+  /* ---------- result rendering ---------- */
+  function ed(path, val, cls, tag) {
+    tag = tag || 'div';
+    return '<' + tag + ' class="ed ' + (cls || '') + '" contenteditable="true" spellcheck="false" data-p="' + esc(path) + '">' + esc(val) + '</' + tag + '>';
+  }
+  function setPath(o, path, val) {
+    var p = path.split('.'), k;
+    for (var i = 0; i < p.length - 1; i++) { k = /^\d+$/.test(p[i]) ? +p[i] : p[i]; if (o[k] == null) return; o = o[k]; }
+    k = /^\d+$/.test(p[p.length - 1]) ? +p[p.length - 1] : p[p.length - 1];
+    o[k] = val;
+  }
+  function renderPlan() {
+    var p = cur.plan;
+    return '<div class="doc">' +
+      '<div class="sec"><div class="lbl">' + esc(t('d_plan')) + '</div>' + ed('plan.topic', p.topic, '', 'h2') + '</div>' +
+      '<div class="pass">' +
+      '<div><span class="lbl">' + esc(t('d_spec')) + '</span>' + ed('plan.specialty', p.specialty) + '</div>' +
+      '<div><span class="lbl">' + esc(t('d_mod')) + '</span>' + ed('plan.module', p.module) + '</div>' +
+      '<div><span class="lbl">' + esc(t('d_type')) + '</span>' + ed('plan.lessonType', p.lessonType) + '</div>' +
+      '<div><span class="lbl">' + esc(t('d_meth')) + '</span>' + ed('plan.methods', p.methods) + '</div></div>' +
+      '<div class="cols"><div><div class="lbl">' + esc(t('d_goals')) + '</div><ul>' + p.goals.map(function (g, i) { return '<li>' + ed('plan.goals.' + i, g) + '</li>'; }).join('') + '</ul></div>' +
+      '<div><div class="lbl">' + esc(t('d_crit')) + '</div><ul>' + p.criteria.map(function (g, i) { return '<li>' + ed('plan.criteria.' + i, g) + '</li>'; }).join('') + '</ul></div></div>' +
+      '<div class="sec"><div class="lbl">' + esc(t('d_course')) + '</div>' + p.stages.map(function (s, i) {
+        var b = 'plan.stages.' + i + '.';
+        return '<div class="stage"><div><span class="lbl">' + esc(t('d_stage')) + '</span>' + ed(b + 'stage', s.stage, 'st-t') + '</div>' +
+          '<div><span class="lbl">' + esc(t('d_teacher')) + '</span>' + ed(b + 'teacher', s.teacher) + '</div>' +
+          '<div><span class="lbl">' + esc(t('d_students')) + '</span>' + ed(b + 'students', s.students) + '</div>' +
+          '<div><span class="lbl">' + esc(t('d_res')) + '</span>' + ed(b + 'resources', s.resources) + '</div></div>';
+      }).join('') + '</div>' +
+      '<div class="sec"><div class="lbl">' + esc(t('d_hw')) + '</div>' + ed('plan.homework', p.homework) + '</div></div>';
+  }
+  function renderNotes() {
+    var n = cur.notes;
+    return '<div class="doc">' +
+      '<div class="sec"><div class="lbl">' + esc(t('d_notes')) + '</div><h2>' + esc(cur.plan.topic) + '</h2></div>' +
+      n.theory.map(function (x, i) {
+        var b = 'notes.theory.' + i + '.';
+        return '<div class="sec"><h3>' + ed(b + 'heading', x.heading, '', 'span') + '</h3>' + ed(b + 'content', x.content) +
+          (x.example ? ed(b + 'example', x.example, 'code', 'pre') : '') + '</div>';
+      }).join('') +
+      (n.caseText ? '<div class="case"><div class="lbl">' + esc(t('d_case')) + '</div><h3>' + ed('notes.caseTitle', n.caseTitle, '', 'span') + '</h3>' + ed('notes.caseText', n.caseText) + '</div>' : '') +
+      (n.mistakes.length ? '<div class="sec"><div class="lbl">' + esc(t('d_mist')) + '</div>' + n.mistakes.map(function (m, i) {
+        var b = 'notes.mistakes.' + i + '.';
+        return '<div class="mist"><b>' + ed(b + 'mistake', m.mistake, '', 'span') + '</b><div><span class="lbl">' + esc(t('d_right')) + '</span> ' + ed(b + 'fix', m.fix, '', 'span') + '</div></div>';
+      }).join('') + '</div>' : '') +
+      (n.tasks.length ? '<div class="sec"><div class="lbl">' + esc(t('d_tasks')) + '</div>' + n.tasks.map(function (x, i) {
+        var b = 'notes.tasks.' + i + '.';
+        return '<div class="lvl"><span class="tag">' + esc(x.level) + '</span>' + ed(b + 'task', x.task) +
+          '<details><summary>' + esc(t('d_answer')) + '</summary><div class="ans">' + ed(b + 'answer', x.answer) + '</div></details></div>';
+      }).join('') + '</div>' : '') +
+      (n.quiz.length ? '<div class="sec"><div class="lbl">' + esc(t('d_quiz')) + '</div>' + n.quiz.map(function (q, i) {
+        var b = 'notes.quiz.' + i + '.';
+        return '<div class="lvl"><b>' + ed(b + 'question', q.question, '', 'span') + '</b><div class="ans"><span class="lbl">' + esc(t('d_ans')) + '</span> ' + ed(b + 'answer', q.answer, '', 'span') + '</div></div>';
+      }).join('') + '</div>' : '') + '</div>';
+  }
+  function renderSlides() {
+    return '<div class="doc">' + cur.slides.map(function (s, i) {
+      var b = 'slides.' + i + '.';
+      return '<div class="slide"><div class="slide-scr"><div class="lbl">' + esc(t('d_slide')) + ' ' + (i + 1) + '</div><h3>' + ed(b + 'title', s.title, '', 'span') + '</h3>' +
+        '<ul>' + s.bullets.map(function (x, j) { return '<li>' + ed(b + 'bullets.' + j, x, '', 'span') + '</li>'; }).join('') + '</ul>' +
+        (s.example ? ed(b + 'example', s.example, 'ex') : '') + '</div>' +
+        '<div class="slide-nt"><span class="lbl">' + esc(t('d_speech')) + '</span>' + ed(b + 'notes', s.notes) + '</div></div>';
+    }).join('') + '</div>';
+  }
+  function fmtMin(m) {
+    m = Math.round(m); var a = Math.abs(m), h = Math.floor(a / 60), r = a % 60;
+    return (m < 0 ? '−' : '') + (h ? h + ' ' + t('u_h') + ' ' : '') + r + ' ' + t('u_m');
+  }
+  function logSummary() {
+    if (!log.length) return t('tm_sum0');
+    var saved = log.reduce(function (a, x) { return a + (x.manual - x.ms / 60000); }, 0);
+    return t('tm_sum', { n: log.length, t: fmtMin(saved) });
+  }
+  function timeCard() {
+    if (cur.example) return '<div class="sheet note">' + esc(t('tm_demo')) + '</div>';
+    var sec = Math.round(cur.ms / 1000), ts = Math.floor(sec / 60) + ' ' + t('u_m') + ' ' + (sec % 60) + ' ' + t('u_s');
+    return '<div class="sheet timecard"><div class="lbl">' + esc(t('tm_t')) + '</div>' +
+      '<p>' + esc(t('tm_p', { t: ts })) + '</p>' +
+      '<div class="row two"><div class="field"><label for="manual">' + esc(t('tm_min')) + '</label>' +
+      '<input type="number" id="manual" min="1" max="1000" inputmode="numeric" value="' + esc(cur.manual) + '"></div>' +
+      '<button class="btn ghost" type="button" data-act="log"' + (cur.logged ? ' disabled' : '') + '>' + esc(cur.logged ? t('tm_logged') : t('tm_log')) + '</button></div>' +
+      '<p class="note">' + esc(logSummary()) + '</p></div>';
+  }
+  function renderRes() {
+    var body = sub === 'plan' ? renderPlan() : sub === 'notes' ? renderNotes() : renderSlides();
+    $('#resRoot').innerHTML =
+      '<div class="warnbar"><b>' + esc(cur.example ? t('r_demo_b') : t('r_draft_b')) + '</b> ' + esc(cur.example ? t('r_demo_t') : t('r_draft_t')) + ' ' +
+      (cur.tpls && cur.tpls.length ? esc(t('r_built', { n: cur.tpls.join(', ') })) + ' ' : '') + esc(t('r_edit')) + '</div>' +
+      '<div class="exports"><button class="btn" type="button" data-act="docx">' + esc(t('r_docx')) + '</button>' +
+      '<button class="btn" type="button" data-act="pptx">' + esc(t('r_pptx')) + '</button>' +
+      '<button class="btn ghost" type="button" data-act="new">' + esc(t('r_new')) + '</button></div>' +
+      timeCard() +
+      '<div class="subtabs" role="tablist">' + [['plan', t('sb_plan')], ['notes', t('sb_notes')], ['slides', t('sb_slides', { n: cur.slides.length })]].map(function (x) {
+        return '<button role="tab" data-sub="' + x[0] + '" aria-selected="' + (sub === x[0]) + '">' + esc(x[1]) + '</button>';
+      }).join('') + '</div>' +
+      '<div class="sheet">' + body + '</div>';
+  }
+  $('#resRoot').addEventListener('paste', function (e) {
+    if (!e.target.closest('[data-p]')) return;
+    e.preventDefault(); document.execCommand('insertText', false, e.clipboardData.getData('text/plain'));
+  });
+  $('#resRoot').addEventListener('input', function (e) {
+    var el = e.target.closest('[data-p]');
+    if (el) { setPath(cur, el.dataset.p, el.innerText.replace(/\n{3,}/g, '\n\n').replace(/\s+$/, '')); saveDraft(); return; }
+    if (e.target.id === 'manual') { cur.manual = e.target.value; saveDraft(); }
+  });
+  $('#resRoot').addEventListener('click', function (e) {
+    var s = e.target.closest('[data-sub]');
+    if (s) { sub = s.dataset.sub; renderRes(); return; }
+    var a = e.target.closest('[data-act]'); if (!a) return;
+    if (a.dataset.act === 'docx') exportDocx();
+    else if (a.dataset.act === 'pptx') exportPptx();
+    else if (a.dataset.act === 'new') go('new');
+    else if (a.dataset.act === 'log') {
+      var m = parseFloat(cur.manual);
+      if (!Number.isFinite(m) || m < 1 || m > 1000) { toast(t('tt_manual')); return; }
+      log.push({ date: Date.now(), topic: cur.plan.topic.slice(0, 80), manual: m, ms: cur.ms });
+      store.set('su_log_v1', log); cur.logged = true; cur.manual = String(m); saveDraft(); renderRes();
+      toast(t('tt_logged', { t: fmtMin(m - cur.ms / 60000) }));
+    }
+  });
+
+  /* ---------- export ---------- */
+  function fname(ext) { return (cur.plan.topic || 'lesson').replace(/[\\/:*?"<>|]/g, '').trim().slice(0, 50) + ext; }
+  function saveFile(name, data) {
+    if (!dl) { toast(t('tt_nodl')); return; }
+    dl.save({ filename: name, data: data }).then(function () { toast(t('tt_fsaved')); }).catch(function (e) {
+      if (e && e.code === 'declined') return;
+      toast(t('tt_fail'));
+    });
+  }
+  function lines(x) { return str(x).split(/\n+/).filter(function (y) { return y.trim(); }); }
+  async function exportDocx() {
+    var X = window.docx;
+    if (!X) { toast(t('tt_docx_lib')); return; }
+    try {
+      var p = cur.plan, n = cur.notes, ch = [];
+      var H1 = function (x) { return new X.Paragraph({ text: x, heading: X.HeadingLevel.HEADING_1, spacing: { before: 200, after: 120 } }); };
+      var H2 = function (x) { return new X.Paragraph({ text: x, heading: X.HeadingLevel.HEADING_2, spacing: { before: 200, after: 80 } }); };
+      var P = function (x, o) { return lines(x).map(function (l) { return new X.Paragraph({ children: [new X.TextRun(Object.assign({ text: l }, o || {}))], spacing: { after: 80 } }); }); };
+      var B = function (x) { return new X.Paragraph({ text: x, bullet: { level: 0 } }); };
+      var cell = function (x, bold) { var c = P(x, bold ? { bold: true } : {}); return new X.TableCell({ children: c.length ? c : [new X.Paragraph('')] }); };
+      ch.push(H1(t('d_plan') + ': ' + p.topic));
+      ch = ch.concat(P(t('d_spec') + ': ' + p.specialty), P(t('d_mod') + ': ' + p.module), P(t('d_type') + ': ' + p.lessonType), P(t('d_meth') + ': ' + p.methods));
+      ch.push(H2(t('d_goals'))); p.goals.forEach(function (g) { ch.push(B(g)); });
+      ch.push(H2(t('d_crit'))); p.criteria.forEach(function (g) { ch.push(B(g)); });
+      ch.push(H2(t('d_course')));
+      ch.push(new X.Table({
+        width: { size: 100, type: X.WidthType.PERCENTAGE },
+        rows: [new X.TableRow({ tableHeader: true, children: [t('d_stage'), t('d_teacher'), t('d_students'), t('d_res')].map(function (h) { return cell(h, true); }) })]
+          .concat(p.stages.map(function (s) { return new X.TableRow({ children: [cell(s.stage, true), cell(s.teacher), cell(s.students), cell(s.resources)] }); }))
+      }));
+      ch.push(H2(t('d_hw'))); ch = ch.concat(P(p.homework));
+      ch.push(new X.Paragraph({ children: [new X.PageBreak()] }));
+      ch.push(H1(t('d_notes')));
+      n.theory.forEach(function (x) {
+        ch.push(H2(x.heading)); ch = ch.concat(P(x.content));
+        if (x.example) ch = ch.concat(P(x.example, { font: 'Courier New', size: 21 }));
+      });
+      if (n.caseText) { ch.push(H2(t('d_case') + ': ' + n.caseTitle)); ch = ch.concat(P(n.caseText)); }
+      if (n.mistakes.length) { ch.push(H2(t('d_mist'))); n.mistakes.forEach(function (m) { ch = ch.concat(P(m.mistake, { bold: true }), P(t('d_right') + ': ' + m.fix)); }); }
+      if (n.tasks.length) { ch.push(H2(t('d_tasks'))); n.tasks.forEach(function (x) { ch = ch.concat(P(x.level, { bold: true }), P(x.task), P(t('d_answer') + ': ' + x.answer, { italics: true })); }); }
+      if (n.quiz.length) { ch.push(H2(t('d_quiz'))); n.quiz.forEach(function (q, i) { ch = ch.concat(P((i + 1) + '. ' + q.question, { bold: true }), P(t('d_ans') + ': ' + q.answer, { italics: true })); }); }
+      ch.push(new X.Paragraph({ children: [new X.TextRun({ text: t('d_footer'), italics: true, size: 18 })], spacing: { before: 300 } }));
+      var doc = new X.Document({ sections: [{ children: ch }] });
+      var blob = await X.Packer.toBlob(doc);
+      saveFile(fname(' (' + t('dt_plan').toLowerCase() + ').docx'), blob);
+    } catch (e) { toast(t('tt_docx_fail')); }
+  }
+  async function exportPptx() {
+    if (!window.PptxGenJS) { toast(t('tt_pptx_lib')); return; }
+    try {
+      var x = new window.PptxGenJS();
+      x.layout = 'LAYOUT_16x9'; x.title = cur.plan.topic;
+      cur.slides.forEach(function (s, i) {
+        var sl = x.addSlide(); sl.background = { color: '0B1730' };
+        sl.addText(t('d_slide') + ' ' + (i + 1) + '  |  ' + (cur.plan.module || ''), { x: 0.6, y: 0.35, w: 8.8, h: 0.3, fontSize: 11, color: '85B8FF', bold: true, fontFace: 'Arial' });
+        sl.addText(s.title, { x: 0.6, y: 0.75, w: 8.8, h: 0.9, fontSize: 24, color: 'FFFFFF', bold: true, fontFace: 'Arial', valign: 'top' });
+        sl.addText(s.bullets.map(function (b) { return { text: b, options: { bullet: true, breakLine: true } }; }), { x: 0.6, y: 1.75, w: 8.8, h: 2.3, fontSize: 16, color: 'F0F5FF', fontFace: 'Arial', valign: 'top', paraSpaceAfter: 6 });
+        if (s.example) {
+          sl.addShape(x.ShapeType.rect, { x: 0.6, y: 4.2, w: 8.8, h: 0.95, fill: { color: '14294A' }, line: { color: '68A5FF', width: 1 } });
+          sl.addText(s.example, { x: 0.75, y: 4.25, w: 8.5, h: 0.85, fontSize: 12, color: 'FFFFFF', fontFace: 'Courier New', valign: 'middle' });
+        }
+        if (s.notes) sl.addNotes(s.notes);
+      });
+      var out = await x.write({ outputType: 'blob' });
+      saveFile(fname(' (' + t('dt_slides').toLowerCase() + ').pptx'), out);
+    } catch (e) { toast(t('tt_pptx_fail')); }
+  }
+
+  /* ---------- language / profession wiring ---------- */
+  function applyI18n() {
+    document.documentElement.lang = lang === 'kk' ? 'kk' : 'ru';
+    $$('[data-i18n]').forEach(function (el) { el.textContent = t(el.dataset.i18n); });
+    $$('[data-i18n-ph]').forEach(function (el) { el.placeholder = t(el.dataset.i18nPh); });
+    $$('[data-i18n-aria]').forEach(function (el) { el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
+    $$('[data-lang]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
+    $('#fLang').value = lang;
+    fillProfSelect(); fillForm(false); srcCount(); syncAi();
+    if (cur.example) cur = clone(DEMO[lang]);
+    renderLib(); renderRes();
+  }
+  $$('[data-lang]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (b.dataset.lang === lang) return;
+      lang = b.dataset.lang; store.set('su_lang', lang); applyI18n();
+    });
+  });
+  $('#profSel').addEventListener('change', function () {
+    profId = this.value; store.set('su_prof', profId); fillForm(true);
+    if (profId === 'other') $('#fSpec').focus();
+  });
+
+  syncTheme();
+  $('#orKey').value = keyNow(); $('#orModel').value = modelNow(); $('#apiBase').value = baseNow();
+  $('#rememberKey').checked = !!store.get('or_key', '');
+  function syncPreset() { $('#apiPreset').value = baseNow().includes('discovery-api.intern-ai.org.cn') ? 'intern' : baseNow() === 'https://openrouter.ai/api/v1' ? 'openrouter' : 'custom'; }
+  syncPreset();
+  $('#apiPreset').addEventListener('change', function () {
+    if (this.value === 'intern') { $('#apiBase').value = 'https://discovery-api.intern-ai.org.cn/v1'; $('#orModel').value = ''; }
+    if (this.value === 'openrouter') { $('#apiBase').value = 'https://openrouter.ai/api/v1'; $('#orModel').value = 'openrouter/free'; }
+    if (this.value === 'custom') $('#apiBase').focus();
+  });
+  function applySettings() {
+    var base = $('#apiBase').value.trim().replace(/\/+$/, ''), key = $('#orKey').value.trim(), model = $('#orModel').value.trim();
+    if (!validBase(base) || !key || !model) { $('#apiMessage').textContent = t('api_invalid'); return false; }
+    if (base.replace(/\/+$/, '') !== baseNow().replace(/\/+$/, '') && !window.confirm(lang === 'kk' ? 'Кілт пен материалдар осы API мекенжайына жіберіледі: ' + base : 'Ключ и материалы будут отправляться по адресу: ' + base + '. Продолжить?')) return false;
+    if (ctl || ctlA) { $('#apiMessage').textContent = lang === 'kk' ? 'Алдымен генерацияны тоқтатыңыз.' : 'Сначала остановите генерацию.'; return false; }
+    memoryKey = key; memoryBase = base; memoryModel = model;
+    try { sessionStorage.setItem('su_api_key', key); } catch (_) {}
+    var persisted = store.set('su_api_base', base) && store.set('or_model', model);
+    if ($('#rememberKey').checked) persisted = store.set('or_key', key) && persisted;
+    else { try { localStorage.removeItem('or_key'); } catch (_) {} }
+    refreshAi(); syncPreset();
+    $('#apiMessage').textContent = persisted ? t('api_saved') : (lang === 'kk' ? 'Баптаулар тек осы бетте қолданылды: сақтау қолжетімсіз.' : 'Настройки применены только на этой странице: хранилище недоступно.');
+    return true;
+  }
+  $('#orSave').addEventListener('click', applySettings);
+  $('#keyToggle').addEventListener('click', function () { var show = $('#orKey').type === 'password'; $('#orKey').type = show ? 'text' : 'password'; this.setAttribute('aria-pressed', String(show)); this.textContent = t(show ? 'api_hide' : 'api_show'); });
+  $('#apiTest').addEventListener('click', async function () {
+    if (!applySettings()) return;
+    this.disabled = true; $('#orSave').disabled = true; $('#orClear').disabled = true; $('#apiMessage').textContent = t('api_testing');
+    try { await requestText('Reply with OK.'); $('#apiMessage').textContent = t('api_success'); }
+    catch (e) { $('#apiMessage').textContent = errCopy(e); }
+    finally { this.disabled = false; $('#orSave').disabled = false; $('#orClear').disabled = false; }
+  });
+  $('#orClear').addEventListener('click', function () {
+    if (ctl) ctl.abort(); if (ctlA) ctlA.abort();
+    memoryKey = ''; try { sessionStorage.removeItem('su_api_key'); localStorage.removeItem('or_key'); } catch (_) {}
+    $('#orKey').value = ''; $('#apiMessage').textContent = t('or_cleared'); refreshAi();
+  });
+  $('#aiState').setAttribute('role', 'button'); $('#aiState').tabIndex = 0;
+  $('#aiState').addEventListener('click', function () { go('api'); });
+  $('#aiState').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go('api'); } });
+  ['new','lib','res','api'].forEach(function (name) { var panel = $('#v-' + name), tab = $('#t-' + name); panel.setAttribute('role','tabpanel'); panel.setAttribute('aria-labelledby',tab.id); tab.setAttribute('aria-controls',panel.id); tab.tabIndex = name === 'new' ? 0 : -1; });
+  $('.tabs').addEventListener('keydown', function (e) {
+    var tabs = $$('.tabs [role="tab"]'), index = tabs.indexOf(document.activeElement);
+    if (index < 0 || !['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
+    e.preventDefault(); index = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (index + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+    go(tabs[index].dataset.go); tabs[index].focus();
+  });
+  $$('.err').forEach(function (el) { el.setAttribute('role', 'alert'); });
+  refreshAi();
+
+  applyI18n();
+})();

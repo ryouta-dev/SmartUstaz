@@ -1,0 +1,11 @@
+{
+  "name": "smartustaz",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node tests/smoke.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

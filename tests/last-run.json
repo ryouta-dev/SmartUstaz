@@ -1,0 +1,27 @@
+{
+  "passed": [
+    "Initial view, no hidden progress",
+    "Unconfigured generation gives actionable error",
+    "Discovery default, unrestricted key format, session-only storage",
+    "Connection check sends selected model and key only to selected endpoint",
+    "Key visibility toggle",
+    "Reject unsafe API URLs",
+    "Readable API error: 401",
+    "Readable API error: 429",
+    "Readable API error: 500",
+    "Readable API error: network",
+    "Readable API error: truncated",
+    "Keyboard navigation",
+    "Template filtering, explicit no-template selection persists",
+    "Three-step generation and save on reload",
+    "Malformed model response rejected, old result retained",
+    "Cancellation and busy buttons survive language switching",
+    "Template analysis and persistence",
+    "Corrupt template import sanitized",
+    "Desktop and mobile overflow, all views",
+    "Dark theme, language, settings persist on reload",
+    "Clear key removes session and permanent copies"
+  ],
+  "unhandledErrors": [],
+  "mockedAPI": true
+}
