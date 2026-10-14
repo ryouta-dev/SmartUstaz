@@ -13,3 +13,9 @@ body{margin:0;line-height:1.6}button,input,textarea,select{-webkit-tap-highlight
 
 ::placeholder{color:var(--ink-2);opacity:1}
 @media(max-width:759px){body{height:100dvh;overflow:hidden}.wrap{height:calc(100dvh - 70px - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior-y:contain;padding-bottom:32px}.tabs{height:calc(70px + env(safe-area-inset-bottom,0px))}.tabs button{min-height:68px}}
+
+/* Incremental generation, independent task states and bounded live preview. */
+.run-panel{margin-top:24px;gap:16px}.run-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.run-heading h2{font-size:22px}.run-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.run-card{display:grid;gap:6px;align-content:start;padding:16px;border:1px solid var(--rule);border-radius:8px;background:var(--bg);min-width:0}.run-card strong{font-size:15px}.run-card span,.run-card small{font-size:14px;color:var(--ink-2);overflow-wrap:anywhere}.run-card.work{border-color:var(--accent);background:var(--accent-soft)}.run-card.done{border-top:3px solid var(--accent)}.run-card.failed{border-color:var(--red)}.live-panel{border-top:1px solid var(--rule);padding-top:12px}.live-panel summary{font-size:14px;color:var(--ink-2)}#liveText{margin:12px 0 0;padding:16px;max-height:180px;overflow:auto;background:var(--bg);border:1px solid var(--rule);border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.6 var(--font-mono)}.run-error{margin-top:20px}.warnbar .btn{margin-top:12px}.warnbar p{margin-top:8px}body:has(.run-panel:not([hidden])) .ed{caret-color:var(--accent)}
+@media(max-width:759px){.run-cards{grid-template-columns:1fr}.run-card{grid-template-columns:1fr auto;gap:6px 12px}.run-card small{grid-column:1/-1}.run-panel{padding:20px}.run-heading h2{font-size:20px}}
+
+.run-panel>.btns{order:4}.run-panel>.live-panel{order:5}#liveText{font-family:var(--font-body);font-size:15px}

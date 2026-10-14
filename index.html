@@ -214,6 +214,15 @@ details ul{margin:6px 0 0;padding-left:20px;font-size:14px;color:var(--ink-2);di
     <button role="tab" id="t-api" data-go="api" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--nav-bg)"/><circle cx="15" cy="17" r="3" fill="var(--nav-bg)"/></svg><span data-i18n="tab_api"></span></button>
   </nav>
 
+  <section id="genProg" class="prog sheet run-panel" aria-label="Генерация / Генерация" hidden>
+    <div class="run-heading"><h2 data-i18n="run_title"></h2><span id="runElapsed" class="note" role="timer"></span></div>
+    <p class="note" data-i18n="run_hint"></p>
+    <div id="runCards" class="run-cards"></div>
+    <p id="runSlow" class="warnbar" data-i18n="run_slow" hidden></p>
+    <details id="livePanel" class="live-panel" open hidden><summary><span data-i18n="run_preview"></span> · <span id="livePart"></span></summary><pre id="liveText"></pre></details>
+    <div class="btns"><button id="runOpen" class="btn" type="button" data-i18n="run_open" hidden></button><button class="btn ghost" id="genStop" type="button" data-i18n="stop"></button></div>
+  </section>
+  <div id="genErr" class="err run-error" role="alert" hidden></div>
   <section class="view" id="v-api" hidden>
     <div class="page-h"><div class="lbl" data-i18n="api_kicker"></div><h1 data-i18n="api_title"></h1><p class="lead" data-i18n="api_lead"></p></div>
     <div class="sheet step">
@@ -221,6 +230,7 @@ details ul{margin:6px 0 0;padding-left:20px;font-size:14px;color:var(--ink-2);di
       <div class="field"><label for="apiBase">Base URL</label><input type="url" id="apiBase" autocomplete="off" spellcheck="false" placeholder="https://discovery-api.intern-ai.org.cn/v1"><span class="note" data-i18n="api_base_hint"></span></div>
       <div class="field"><label for="orKey" data-i18n="api_key"></label><div class="key-row"><input type="password" id="orKey" autocomplete="off" spellcheck="false" placeholder="API key"><button class="btn ghost" id="keyToggle" type="button" data-i18n="api_show" aria-pressed="false"></button></div></div>
       <div class="field"><label for="orModel" data-i18n="api_model"></label><input type="text" id="orModel" autocomplete="off" spellcheck="false" placeholder="model-id"><span class="note" data-i18n="api_model_hint"></span></div>
+      <label class="remember"><input type="checkbox" id="apiStream" checked><span data-i18n="api_stream"></span></label><p class="note" data-i18n="stream_help"></p>
       <label class="remember"><input type="checkbox" id="rememberKey"><span data-i18n="api_remember"></span></label>
       <p class="note" data-i18n="api_privacy"></p>
       <div id="apiMessage" class="note" role="status" aria-live="polite"></div>
@@ -284,13 +294,6 @@ details ul{margin:6px 0 0;padding-left:20px;font-size:14px;color:var(--ink-2);di
     </details>
 
     <div class="warnbar"><b data-i18n="warn_b"></b> <span data-i18n="warn_t"></span></div>
-    <div id="genErr" class="err" hidden></div>
-    <div id="genProg" class="prog sheet" hidden>
-      <div class="steps"><span id="s1" data-i18n="st1"></span><span id="s2" data-i18n="st2"></span><span id="s3" data-i18n="st3"></span></div>
-      <div class="bar"><i></i></div>
-      <div class="note" id="progChars"></div>
-      <div class="btns"><button class="btn ghost" id="genStop" type="button" data-i18n="stop"></button></div>
-    </div>
     <div class="cta">
       <button class="btn wide" id="genGo" type="button" data-i18n="go"></button>
       <p class="note" data-i18n="go_note"></p>
@@ -347,6 +350,7 @@ details ul{margin:6px 0 0;padding-left:20px;font-size:14px;color:var(--ink-2);di
 </div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 
+<script src="api-client.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

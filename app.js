@@ -109,6 +109,7 @@
     tt_docx_fail: ['Не удалось собрать файл Word', 'Word файлын жинау мүмкін болмады'], tt_pptx_fail: ['Не удалось собрать презентацию', 'Презентацияны жинау мүмкін болмады']
   };
   Object.assign(D, {"tab_api": ["Настройки", "Баптаулар"], "c_lead": ["От темы занятия до готового комплекта материалов. С вашей структурой, на языке вашей группы.", "Сабақ тақырыбынан дайын материалдар жинағына дейін. Өз құрылымыңызбен, тобыңыздың тілінде."], "api_kicker": ["Подключение ИИ", "ЖИ қосылымы"], "api_title": ["Ваш провайдер. Ваш выбор.", "Провайдерді өзіңіз таңдаңыз."], "api_lead": ["Подключите любой совместимый с OpenAI Chat Completions API сервис.", "OpenAI Chat Completions API интерфейсімен үйлесімді сервисті қосыңыз."], "api_provider": ["Провайдер", "Провайдер"], "api_custom": ["Другой совместимый API", "Басқа үйлесімді API"], "api_base_hint": ["Адрес API с /v1, без /chat/completions. Только HTTPS; HTTP разрешён для localhost.", "/v1 бар API мекенжайы, /chat/completions қоспаңыз. Тек HTTPS; localhost үшін HTTP рұқсат."], "api_key": ["API-ключ (любой формат)", "API кілті (кез келген формат)"], "api_show": ["Показать", "Көрсету"], "api_hide": ["Скрыть", "Жасыру"], "api_model": ["Идентификатор модели", "Модель идентификаторы"], "api_model_hint": ["Точное имя из кабинета провайдера или его списка моделей. Суффикс :free не обязателен.", "Провайдер кабинетіндегі не модельдер тізіміндегі нақты атау. :free міндетті емес."], "api_remember": ["Запомнить ключ на этом устройстве", "Кілтті осы құрылғыда сақтау"], "api_privacy": ["По умолчанию ключ хранится только до закрытия вкладки. Если включить запоминание, он сохраняется в браузере без шифрования. Ключ и материалы отправляются только на выбранный адрес API. Не используйте личные данные студентов.", "Әдепкіде кілт қойынды жабылғанға дейін сақталады. Сақтауды қоссаңыз, ол браузерде шифрланбай сақталады. Кілт пен материалдар тек таңдалған API мекенжайына жіберіледі. Студенттердің жеке деректерін қолданбаңыз."], "api_save": ["Сохранить настройки", "Баптауларды сақтау"], "api_test": ["Проверить подключение", "Қосылымды тексеру"], "api_clear": ["Удалить ключ", "Кілтті жою"], "api_about": ["О подключении", "Қосылым туралы"], "api_cors": ["Это браузерное приложение: сервер провайдера должен разрешать CORS для вашего сайта. Проверка подключения отправляет короткий запрос модели и может расходовать лимит. Произвольный формат ключа допустим, но сам сервис должен принять ключ. Офлайн можно просматривать и редактировать пример; для ИИ и загрузки библиотек экспорта нужен интернет.", "Бұл браузерлік қолданба: провайдер сервері сайтыңыз үшін CORS рұқсатын беруі керек. Тексеру модельге қысқа сұрау жібереді және лимит жұмсауы мүмкін. Кілттің форматы еркін, бірақ сервис оны қабылдауы керек. Офлайн үлгіні көруге және өңдеуге болады; ЖИ мен экспорт кітапханалары үшін интернет қажет."], "ai_ok": ["API настроен · соединение не проверено", "API бапталған · қосылым тексерілмеген"], "ai_off": ["Подключите ИИ в настройках →", "ЖИ-ді баптауларда қосыңыз →"], "e_noai": ["Укажите адрес API, ключ и модель в настройках.", "Баптауларда API мекенжайын, кілтін және моделін көрсетіңіз."], "er_session": ["API отклонил ключ или доступ к модели (401/403). Проверьте настройки.", "API кілтті не модельге қатынауды қабылдамады (401/403). Баптауларды тексеріңіз."], "api_invalid": ["Проверьте Base URL, ключ и модель.", "Base URL, кілт пен модельді тексеріңіз."], "api_saved": ["Настройки применены. Подключение ещё не проверено.", "Баптаулар қолданылды. Қосылым әлі тексерілмеген."], "api_testing": ["Проверяем подключение…", "Қосылым тексерілуде…"], "api_success": ["Модель ответила. Подключение работает.", "Модель жауап берді. Қосылым жұмыс істейді."], "er_network": ["Нет соединения с API: проверьте интернет, адрес и разрешения CORS у провайдера.", "API қосылымы жоқ: интернетті, мекенжайды және провайдердің CORS рұқсатын тексеріңіз."], "er_timeout": ["API не ответил за 120 секунд. Попробуйте другую модель или повторите.", "API 120 секунд ішінде жауап бермеді. Басқа модельді таңдаңыз не қайталаңыз."], "er_truncated": ["Ответ обрезан лимитом модели. Выберите модель с большим лимитом вывода.", "Жауап модель лимитімен қысқартылды. Шығару лимиті жоғары модельді таңдаңыз."], "er_http": ["Ошибка API (HTTP {n}). Проверьте адрес, модель, баланс и доступ.", "API қатесі (HTTP {n}). Мекенжайды, модельді, балансты және рұқсатты тексеріңіз."], "er_shape": ["Модель вернула неполные материалы. Попробуйте ещё раз или смените модель.", "Модель толық емес материалдар қайтарды. Қайталаңыз не модельді ауыстырыңыз."], "tt_draft": ["Черновик сохранён в браузере", "Қаралым браузерде сақталды"], "warn_t": ["персональные данные студентов. Введённые материалы отправляются выбранному API-провайдеру.", "студенттердің жеке деректерін. Енгізілген материалдар таңдалған API провайдеріне жіберіледі."], "s1_p": ["Выберите направление — ИИ адаптирует примеры и терминологию к профессии студентов.", "Бағытты таңдаңыз — ЖИ мысалдар мен терминдерді студенттердің мамандығына бейімдейді."]});
+  Object.assign(D, {"er_timeout": ["От API не поступало данных 5 минут. Запрос остановлен; готовые разделы сохранены. Повторите недостающие разделы или смените модель.", "API-ден 5 минут бойы дерек келген жоқ. Сұрау тоқтатылды; дайын бөлімдер сақталды. Жетіспейтін бөлімдерді қайталаңыз не модельді ауыстырыңыз."], "er_total_timeout": ["Достигнут защитный предел 30 минут на запрос. Готовые разделы сохранены.", "Бір сұрауға арналған 30 минуттық шекке жетті. Дайын бөлімдер сақталды."], "er_stream_interrupted": ["Поток оборвался до завершения ответа. Готовые разделы сохранены; повторите недостающий раздел.", "Жауап ағыны аяқталмай үзілді. Дайын бөлімдер сақталды; жетіспейтін бөлімді қайталаңыз."], "er_stream_unavailable": ["Браузер не поддерживает потоковый ответ. Отключите потоковый режим в настройках.", "Браузер ағындық жауапты қолдамайды. Баптауларда ағындық режимді өшіріңіз."], "go_note": ["Сначала компактный комплект. Подробности можно добавить после генерации.", "Алдымен ықшам жинақ. Толықтыруды кейін қосуға болады."], "api_stream": ["Получать ответ потоком (рекомендуется)", "Жауапты ағынмен алу (ұсынылады)"], "stream_help": ["Если провайдер отклоняет stream: true, отключите этот режим. Обычный JSON-ответ тоже поддерживается.", "Провайдер stream: true параметрін қабылдамаса, осы режимді өшіріңіз. Қалыпты JSON жауабы да қолданылады."], "run_title": ["Материалы готовятся", "Материалдар дайындалуда"], "run_hint": ["План создаётся первым. Затем конспект и слайды — одновременно. Готовые разделы сохраняются сразу.", "Алдымен жоспар. Одан кейін конспект пен слайдтар қатар жасалады. Дайын бөлімдер бірден сақталады."], "run_wait": ["Ожидание", "Күтілуде"], "run_work": ["Генерация…", "Жасалуда…"], "run_done": ["Готово · сохранено", "Дайын · сақталды"], "run_failed": ["Не завершено", "Аяқталмады"], "run_thinking": ["Модель обрабатывает запрос…", "Модель сұрауды өңдеуде…"], "run_chars": ["Получено знаков: {n}", "Алынған таңба: {n}"], "run_elapsed": ["Прошло: {m}:{s}", "Өткен уақыт: {m}:{s}"], "run_idle": ["Нет данных: {n} с", "Дерек жоқ: {n} с"], "run_preview": ["Поступающий текст · черновой предпросмотр", "Келіп жатқан мәтін · алдын ала қаралым"], "run_open": ["Открыть готовые разделы", "Дайын бөлімдерді ашу"], "partial": ["Комплект не завершён. Готовые разделы сохранены. Можно повторить только недостающие.", "Жинақ аяқталмады. Дайын бөлімдер сақталды. Тек жетіспейтін бөлімдерді қайталауға болады."], "resume": ["Досоздать недостающие разделы", "Жетіспейтін бөлімдерді жасау"], "expand_notes": ["Расширить конспект и задания", "Конспект пен тапсырмаларды кеңейту"], "expand_slides": ["Расширить слайды и речь", "Слайдтар мен сөйлеу мәтінін кеңейту"], "expand_warning": ["Расширение заменит выбранный раздел новым ответом ИИ, включая ваши правки. Продолжить?", "Кеңейту таңдалған бөлімді, түзетулеріңізбен бірге, ЖИ-дің жаңа жауабымен ауыстырады. Жалғастыру керек пе?"], "empty_part": ["Этот раздел пока не готов. Готовый план доступен на соседней вкладке.", "Бұл бөлім әлі дайын емес. Дайын жоспар көрші қойындыда бар."], "expanded": ["Раздел расширен и сохранён", "Бөлім кеңейтіліп, сақталды"], "run_slow": ["Долго ждём данные от провайдера. Можно остановить запрос; готовые разделы не пропадут.", "Провайдер деректерін ұзақ күтудеміз. Сұрауды тоқтатуға болады; дайын бөлімдер сақталады."], "expand_failure": ["Расширение не завершено. Предыдущая версия раздела сохранена.", "Кеңейту аяқталмады. Бөлімнің алдыңғы нұсқасы сақталды."]});
   function t(k, v) {
     var s = (D[k] || [k, k])[lang === 'kk' ? 1 : 0];
     if (v) Object.keys(v).forEach(function (x) { s = s.split('{' + x + '}').join(v[x]); });
@@ -232,44 +233,10 @@
     throw mkErr('invalid_json');
   }
   async function requestText(prompt, opts) {
-    opts = opts || {};
     if (!configured()) throw mkErr('not_granted');
-    var controller = new AbortController(), timedOut = false;
-    var abort = function () { controller.abort(); };
-    if (opts.signal) {
-      if (opts.signal.aborted) throw mkErr('cancelled');
-      opts.signal.addEventListener('abort', abort, { once: true });
-    }
-    var timer = setTimeout(function () { timedOut = true; controller.abort(); }, 120000);
-    try {
-      var res = await fetch(baseNow().replace(/\/+$/, '') + '/chat/completions', {
-        method: 'POST', redirect: 'error', credentials: 'omit', referrerPolicy: 'no-referrer',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + keyNow() },
-        body: JSON.stringify({ model: modelNow(), stream: false, messages: [{ role: 'user', content: prompt }] }),
-        signal: controller.signal
-      });
-      if (!res.ok) {
-        var error = mkErr(res.status === 401 || res.status === 403 ? 'session_expired' : res.status === 429 ? 'rate_limited' : res.status === 413 ? 'prompt_too_large' : 'http'); error.status = res.status; throw error;
-      }
-      var data = await res.json(), choice = data && data.choices && data.choices[0];
-      if (choice && choice.finish_reason === 'length') throw mkErr('truncated');
-      var message = choice && choice.message;
-      if (message && message.refusal) throw mkErr('refused');
-      var text = message && message.content;
-      if (Array.isArray(text)) text = text.map(function (p) { return p.type === 'text' ? p.text : ''; }).join('');
-      if (typeof text !== 'string' || !text.trim()) throw mkErr('invalid_json');
-      if (opts.onText) opts.onText({ text: text });
-      return text;
-    } catch (e) {
-      if (timedOut) throw mkErr('timeout');
-      if (controller.signal.aborted) throw mkErr('cancelled');
-      if (e.code) throw e;
-      throw mkErr(e instanceof SyntaxError ? 'invalid_json' : 'network');
-    } finally {
-      clearTimeout(timer);
-      if (opts.signal) opts.signal.removeEventListener('abort', abort);
-    }
+    return SmartApi.request({ base: baseNow(), key: keyNow(), model: modelNow(), stream: store.get('su_stream', true) !== false }, prompt, opts);
   }
+
   async function orJson(prompt, opts) { return parseLoose(await requestText(prompt + '\nВерни только JSON без пояснений.', opts)); }
 
   function syncAi() {
@@ -289,7 +256,7 @@
   function errCopy(e) {
     var m = { not_granted: 'er_not_granted', rate_limited: 'er_rate', invalid_json: 'er_json', session_expired: 'er_session', sampling_disabled: 'er_disabled', prompt_too_large: 'er_big', refused: 'er_refused' };
     if (e && e.code === 'http') return t('er_http', { n: e.status });
-    return t(({network:'er_network',timeout:'er_timeout',truncated:'er_truncated',shape:'er_shape'})[e && e.code] || m[e && e.code] || 'er_other');
+    return t(({network:'er_network',timeout:'er_timeout',total_timeout:'er_total_timeout',stream_interrupted:'er_stream_interrupted',stream_unavailable:'er_stream_unavailable',response_too_large:'er_big',truncated:'er_truncated',shape:'er_shape'})[e && e.code] || m[e && e.code] || 'er_other');
   }
 
   /* ---------- theme ---------- */
@@ -566,8 +533,9 @@
     }
   };
   var cur = clone(DEMO[lang]);
-  try { var draft = store.get('su_result_v2', null); if (draft && draft.plan && draft.notes && Array.isArray(draft.slides) && Array.isArray(draft.plan.stages) && Array.isArray(draft.notes.theory)) { cur = { example: !!draft.example, ms: Number(draft.ms) || 0, manual: str(draft.manual), logged: !!draft.logged, plan: normPlan(draft.plan), notes: normNotes(Object.assign({}, draft.notes, { case: {title: draft.notes.caseTitle, text: draft.notes.caseText} })), slides: normSlides(draft.slides), tpls: arr(draft.tpls).map(str) }; } } catch (_) {}
-  function saveDraft() { return store.set('su_result_v2', cur); }
+  try { var draft = store.get('su_result_v2', null); if (draft && draft.plan && draft.notes && Array.isArray(draft.slides) && Array.isArray(draft.plan.stages) && Array.isArray(draft.notes.theory)) { cur = { example: !!draft.example, ms: Number(draft.ms) || 0, manual: str(draft.manual), logged: !!draft.logged, plan: normPlan(draft.plan), notes: normNotes(Object.assign({}, draft.notes, { case: {title: draft.notes.caseTitle, text: draft.notes.caseText} })), slides: normSlides(draft.slides), tpls: arr(draft.tpls).map(str), completed: draft.completed, partial: !!draft.partial, source: draft.source, errors: draft.errors || {} }; } } catch (_) {}
+  var storageWarned = false;
+  function saveDraft() { var ok = store.set('su_result_v2',cur); if (!ok && !storageWarned) { storageWarned=true; toast(lang === 'kk' ? 'Нәтиже тек осы бетте: браузер сақтауына қолжетімсіз.' : 'Результат только на этой странице: браузер не разрешает сохранение.'); } return ok; }
   var sub = 'plan';
 
   /* ---------- generation ---------- */
@@ -579,7 +547,7 @@
       spec: $('#fSpec').value.trim() || 'не указана', mod: $('#fMod').value.trim() || 'не указана', topic: $('#fTopic').value.trim(),
       type: TYPE_RU[$('#fType').value] || TYPE_RU.combined, len: $('#fLen').value, lang: $('#fLang').value === 'kk' ? 'Казахский' : 'Русский',
       level: LEVEL_RU[$('#fLevel').value] || 'Средний', ctx: $('#fCtx').value.trim().slice(0, 8000),
-      cCase: $('#cCase').checked, cErr: $('#cErr').checked, cLvl: $('#cLvl').checked
+      profHint: curProf().hint, cCase: $('#cCase').checked, cErr: $('#cErr').checked, cLvl: $('#cLvl').checked
     };
   }
   function tplById(id) { var l = allTpls().filter(function (x) { return x.id === id; }); return l[0] || null; }
@@ -589,24 +557,68 @@
       (v.lang === 'Казахский' ? 'Пиши на литературном казахском языке. Профессиональные термины давай в виде, принятом в Казахстане, при необходимости с русским термином в скобках.\n' : '') +
       (v.ctx ? 'Рабочая программа преподавателя (строй материал по ней):\n"""' + v.ctx + '"""\n' : '') +
       'Требования к качеству: конкретные примеры из профессии студентов, реальные документы и числа, терминология отрасли. Никакой воды и общих фраз. Пиши так, как преподаватель сможет сразу использовать на паре.\n' +
-      curProf().hint + '\n' +
+      (v.profHint || curProf().hint) + '\n' +
       'Не выдумывай номера приказов, статей законов, ставок и форм документов. Если не уверен в норме или номере, напиши «уточнить по действующей редакции». Не используй персональные данные. Ответ только JSON, без пояснений.';
   }
   function tplHint(tp, what) {
     if (!tp) return '';
     return '\nОбразец преподавателя («' + tp.name + '»). Построй ' + what + ' по его структуре, времени, терминологии и стилю. Разбор образца:\n' + JSON.stringify(tp.profile).slice(0, 5000) + '\n';
   }
-  function setStep(n) {
-    [1, 2, 3].forEach(function (i) { $('#s' + i).className = i < n ? 'done' : i === n ? 'on' : ''; });
-    $('#progChars').textContent = t('pr' + n);
+  var run = null, runTimer = null;
+  function renderRun() {
+    if (!run) return;
+    var now = Date.now(), seconds = Math.floor((now - run.started) / 1000);
+    $('#runElapsed').textContent = t('run_elapsed', { m: Math.floor(seconds / 60), s: String(seconds % 60).padStart(2, '0') });
+    $('#runCards').innerHTML = ['plan','notes','slides'].map(function (part) {
+      var state = run.parts[part], inactive = Math.floor((now - state.last) / 1000);
+      return '<article class="run-card ' + state.status + '"><strong>' + esc(t({plan:'sb_plan',notes:'sb_notes',slides:'dt_slides'}[part])) + '</strong><span>' + esc(t({wait:'run_wait',work:'run_work',done:'run_done',failed:'run_failed'}[state.status])) + '</span><small>' + esc(state.chars ? t('run_chars',{n:state.chars}) : state.thinking ? t('run_thinking') : '') + (state.status === 'work' ? ' · ' + esc(t('run_idle',{n:inactive})) : '') + '</small></article>';
+    }).join('');
+    $('#runSlow').hidden = !Object.keys(run.parts).some(function (k) { return run.parts[k].status === 'work' && now - run.parts[k].last > 45000; });
+    $('#runOpen').hidden = !run.saved;
   }
-  async function ask(prompt, step) {
-    setStep(step);
-    return sample.json(prompt, {
-      signal: ctl.signal, cache: false,
-      onText: function (u) { $('#progChars').textContent = t('pr_n', { n: step, c: u.text.length.toLocaleString('ru-RU') }); }
-    });
+  function beginRun(done) {
+    run = { started: Date.now(), parts: {}, saved: false };
+    ['plan','notes','slides'].forEach(function (p) { run.parts[p] = { status: done && done[p] ? 'done' : 'wait', chars:0, last:Date.now() }; });
+    $('#genProg').hidden = false; $('#genErr').hidden = true; $('#liveText').textContent = ''; $('#livePanel').hidden = true;
+    renderRun(); clearInterval(runTimer); runTimer = setInterval(renderRun,1000);
   }
+  function finishRun() { clearInterval(runTimer); runTimer = null; $('#genProg').hidden = true; }
+  // Extract string values for a readable preview, without interpreting any HTML.
+  function readablePreview(text) {
+    var values = [], inside = false, escaped = false, start = 0;
+    for (var i = 0; i < text.length; i++) {
+      var ch = text[i];
+      if (!inside) { if (ch === '"') { inside=true; start=i; } continue; }
+      if (escaped) { escaped=false; continue; }
+      if (ch === '\\') { escaped=true; continue; }
+      if (ch === '"') {
+        if (!/^\s*:/.test(text.slice(i+1))) { try { values.push(JSON.parse(text.slice(start,i+1))); } catch (_) {} }
+        inside=false;
+      }
+    }
+    if (inside) {
+      var tail=text.slice(start+1).replace(/\\u[0-9a-f]{0,3}$/i,'').replace(/\\$/,'');
+      try { values.push(JSON.parse('"'+tail+'"')); } catch (_) {}
+    }
+    return values.filter(Boolean).join('\n\n').slice(-3000);
+  }
+  async function askPart(prompt, part, maxTokens) {
+    var state = run.parts[part]; state.status = 'work'; state.last = Date.now(); renderRun();
+    try {
+      var value = await sample.json(prompt, {
+        signal: ctl.signal, maxTokens: maxTokens,
+        onText: function (u) {
+          state.chars = u.text.length; state.last = Date.now(); state.thinking = false;
+          $('#livePanel').hidden = false;
+          $('#livePart').textContent = t({plan:'sb_plan',notes:'sb_notes',slides:'dt_slides'}[part]);
+          $('#liveText').textContent = readablePreview(u.text); renderRun();
+        },
+        onActivity: function (u) { state.last = Date.now(); state.thinking = u.thinking; }
+      });
+      return value;
+    } catch (e) { state.status = 'failed'; renderRun(); throw e; }
+  }
+  function markSaved(part) { run.parts[part].status = 'done'; run.saved = true; renderRun(); saveDraft(); renderRes(); }
   function normPlan(p) {
     p = p || {};
     return {
@@ -631,52 +643,94 @@
     return l.map(function (x) { x = x || {}; return { title: str(x.title), bullets: arr(x.bullets).map(str), example: str(x.example), notes: str(x.notes) }; });
   }
   $('#genStop').addEventListener('click', function () { if (ctl) ctl.abort(); });
-  $('#genGo').addEventListener('click', async function () {
+  $('#runOpen').addEventListener('click', function () { go('res'); });
+  function checkedPlan(value) {
+    var plan = normPlan(value);
+    if (!plan.topic || !plan.stages.length || !plan.goals.length || !plan.criteria.length || plan.stages.some(function (s) { return !s.stage || !s.teacher || !s.students; })) throw mkErr('invalid_json');
+    return plan;
+  }
+  function checkedNotes(value, v) {
+    var notes = normNotes(value);
+    if (!notes.theory.length || !notes.tasks.length || !notes.quiz.length || notes.theory.some(function (x) { return !x.heading || !x.content; })) throw mkErr('shape');
+    if (!v.cCase) { notes.caseTitle = ''; notes.caseText = ''; } if (!v.cErr) notes.mistakes = [];
+    return notes;
+  }
+  function checkedSlides(value) {
+    var slides = normSlides(value);
+    if (!slides.length || slides.some(function (s) { return !s.title || !s.bullets.length; })) throw mkErr('invalid_json');
+    return slides;
+  }
+  function planPrompt(v, tp) {
+    return rules(v) + tplHint(tp,'план занятия') + '\nСоставь поурочный план. Компактный рабочий черновик: 4–5 этапов, по одному короткому предложению в каждой ячейке, 3 цели, 3 критерия. Всего до 450 слов. Время этапов в сумме ровно ' + v.len + ' минут, укажи в скобках. Практика не менее трети времени.\n' +
+      'Формат JSON: {"topic":"","specialty":"","module":"","lessonType":"","methods":"","goals":[""],"criteria":[""],"stages":[{"stage":"1. Название (N мин)","teacher":"","students":"","resources":""}],"homework":""}';
+  }
+  function notesPrompt(v, tp, plan, expand, existing) {
+    return rules(v) + tplHint(tp,'конспект') + '\nПлан занятия: ' + JSON.stringify(plan) + '. Напиши опорный конспект к этому занятию. ' +
+      (expand ? 'Расширенная версия до 1000 слов: 3 раздела теории с конкретными примерами; сохраняй тему и цели. ' : 'Компактная версия до 450 слов: 2 коротких раздела теории по 2–3 предложения и небольшой пример в каждом. ') +
+      (v.cCase ? 'Добавь ' + (expand ? 'подробный' : 'короткий, 2–3 предложения,') + ' вымышленный профессиональный кейс с вопросом. ' : 'case — пустые строки. ') +
+      (v.cErr ? 'Добавь ' + (expand ? '3' : '1') + ' типичные ошибки с исправлением. ' : 'mistakes — пустой список. ') +
+      (v.cLvl ? 'Дай 3 ' + (expand ? 'подробных' : 'коротких') + ' задания A/B/C с ответами. ' : 'Дай 1 практическое задание с ответом. ') + 'Мини-тест: ' + (expand ? '3' : '2') + ' вопроса с короткими ответами. ' +
+      (existing ? 'Предыдущая версия (сохрани верные сведения): ' + JSON.stringify(existing) + '.' : '') +
+      '\nФормат JSON: {"theory":[{"heading":"","content":"","example":""}],"case":{"title":"","text":""},"mistakes":[{"mistake":"","fix":""}],"tasks":[{"level":"","task":"","answer":""}],"quiz":[{"question":"","answer":""}]}';
+  }
+  function slidesPrompt(v, plan, expand, existing) {
+    return rules(v) + '\nСделай шесть слайдов презентации. Опирайся только на готовый план: ' + JSON.stringify(plan) + '. ' +
+      (expand ? 'До 600 слов суммарно. До 4 коротких тезисов на слайде; конкретные примеры. Речь преподавателя: 2–3 предложения на слайд. ' : 'До 250 слов суммарно. По 2–3 коротких тезиса на слайде, короткий пример только где нужен. Речь преподавателя — одно предложение на слайд. ') +
+      'Последний слайд — практика. ' + (existing ? 'Предыдущая версия: ' + JSON.stringify(existing) : '') +
+      '\nФормат JSON: [{"title":"","bullets":[""],"example":"","notes":""}]';
+  }
+  function hasComplete(part) { return !cur.completed || !!cur.completed[part]; }
+  function syncPartial() { cur.partial = !cur.completed.plan || !cur.completed.notes || !cur.completed.slides; }
+  async function generate(resume) {
     var err = $('#genErr'); err.hidden = true;
-    var v = formVals();
-    if (v.topic.length < 5) { err.textContent = t('e_topic'); err.hidden = false; return; }
-    if (!configured()) { err.textContent = t('e_noai'); err.hidden = false; return; }
     if (ctl || ctlA) return;
-    ctl = new AbortController(); syncAi();
-    $('#genProg').hidden = false; $('#genGo').disabled = true; setStep(1);
-    $('#genProg').scrollIntoView({ block: 'center' });
-    var t0 = Date.now(), pT = tplById($('#fPlanTpl').value), nT = tplById($('#fNotesTpl').value);
+    if (!configured()) { err.textContent = t('e_noai'); err.hidden = false; return; }
+    var src = resume && cur.source ? cur.source : { values:formVals(), planTpl:tplById($('#fPlanTpl').value), notesTpl:tplById($('#fNotesTpl').value) };
+    var v = src.values;
+    if (!v || !v.topic || v.topic.length < 5) { err.textContent = t('e_topic'); err.hidden = false; return; }
+    ctl = new AbortController(); syncAi(); beginRun(resume ? cur.completed : null);
+    $('#genProg').scrollIntoView({block:'center'});
+    var t0 = Date.now(), baseMs = resume ? cur.ms : 0;
     try {
-      var planPrompt = rules(v) + tplHint(pT, 'план занятия') +
-        '\nСоставь поурочный план. Этапы должны в сумме давать ровно ' + v.len + ' минут, время указывай в названии этапа в скобках. Практика занимает не меньше трети времени. Цели в формате «Образовательная / Развивающая / Воспитательная», критерии оценивания измеримы.\n' +
-        'Формат JSON: {"topic":"","specialty":"","module":"","lessonType":"","methods":"","goals":["",""],"criteria":["",""],"stages":[{"stage":"1. Название (N мин)","teacher":"что делает преподаватель","students":"что делают студенты","resources":"ресурсы и формы оценивания"}],"homework":""}';
-      var plan = normPlan(await ask(planPrompt, 1));
-      if (!plan.topic || !plan.stages.length || !plan.goals.length || !plan.criteria.length || plan.stages.some(function (s) { return !s.stage || !s.teacher || !s.students; })) { var e1 = new Error('x'); e1.code = 'invalid_json'; throw e1; }
-
-      var notesPrompt = rules(v) + tplHint(nT, 'конспект') +
-        '\nПлан занятия уже составлен: ' + JSON.stringify(plan.stages.map(function (s) { return s.stage; })) + '. Напиши опорный конспект к этому занятию: ' +
-        'два содержательных раздела теории, в каждом поле example с примером, расчётом, схемой или кодом.' +
-        (v.cCase ? ' Добавь реальный кейс из практики предприятия (названия вымышленные) с вопросами для обсуждения.' : ' Поле case оставь с пустыми строками.') +
-        (v.cErr ? ' Добавь три типичные ошибки студентов с объяснением, как правильно.' : ' Поле mistakes оставь пустым списком.') +
-        (v.cLvl ? ' Добавь три задания уровней A, B, C и для каждого эталонный ответ для преподавателя с расчётом.' : ' Добавь одно практическое задание с ответом.') +
-        ' Добавь три вопроса мини-теста с эталонными ответами.\n' +
-        'Формат JSON: {"theory":[{"heading":"","content":"","example":""}],"case":{"title":"","text":""},"mistakes":[{"mistake":"","fix":""}],"tasks":[{"level":"Уровень A (базовый)","task":"","answer":""}],"quiz":[{"question":"","answer":""}]}';
-      var notes = normNotes(await ask(notesPrompt, 2));
-      if (!notes.theory.length || !notes.tasks.length || !notes.quiz.length || notes.theory.some(function (x) { return !x.heading || !x.content; })) throw mkErr('shape');
-      if (!v.cCase) { notes.caseTitle = ''; notes.caseText = ''; }
-      if (!v.cErr) notes.mistakes = [];
-
-      var slidesPrompt = rules(v) +
-        '\nСделай шесть слайдов презентации для этого занятия. Тезисы короткие, на слайде не больше четырёх тезисов. Поле example содержит расчёт, схему, код или пример для экрана. В поле notes дай живую речь преподавателя на 2–3 предложения. Последний слайд про практику и типичные ошибки.\n' +
-        'План занятия: ' + JSON.stringify(plan.stages.map(function (s) { return s.stage; })) + '. Заголовки разделов конспекта: ' + JSON.stringify(notes.theory.map(function (x) { return x.heading; })) + '.\n' +
-        'Формат JSON: [{"title":"","bullets":["","","",""],"example":"","notes":""}]';
-      var slides = normSlides(await ask(slidesPrompt, 3));
-      if (!slides.length || slides.some(function (s) { return !s.title || !s.bullets.length; })) { var e2 = new Error('x'); e2.code = 'invalid_json'; throw e2; }
-
-      cur = { example: false, ms: Date.now() - t0, manual: '', logged: false, plan: plan, notes: notes, slides: slides, tpls: [pT && pT.name, nT && nT.name].filter(Boolean) };
-      saveDraft(); sub = 'plan'; renderRes(); go('res');
+      if (!resume) {
+        var plan = checkedPlan(await askPart(planPrompt(v,src.planTpl),'plan',2600));
+        store.set('su_result_previous',cur);
+        cur = { example:false, ms:0, manual:'', logged:false, plan:plan, notes:normNotes({}), slides:[], tpls:[src.planTpl && src.planTpl.name,src.notesTpl && src.notesTpl.name].filter(Boolean), source:src, completed:{plan:true,notes:false,slides:false}, partial:true, errors:{} };
+        cur.ms = Date.now()-t0; markSaved('plan');
+      } else { run.saved = true; cur.errors = {}; }
+      // Both tasks start before either is awaited. One failure never discards the other.
+      var tasks = ['notes','slides'].filter(function (part) { return !hasComplete(part); }).map(async function (part) {
+        try {
+          var value = await askPart(part === 'notes' ? notesPrompt(v,src.notesTpl,cur.plan,false) : slidesPrompt(v,cur.plan,false),part,part === 'notes' ? 3500 : 2200);
+          cur[part] = part === 'notes' ? checkedNotes(value,v) : checkedSlides(value);
+          cur.completed[part] = true; delete cur.errors[part]; syncPartial(); cur.ms = baseMs+Date.now()-t0; markSaved(part);
+        } catch (e) { run.parts[part].status = 'failed'; cur.errors[part] = errCopy(e); cur.ms = baseMs+Date.now()-t0; saveDraft(); renderRun(); throw e; }
+      });
+      var results = await Promise.allSettled(tasks);
+      var failed = results.find(function (x) { return x.status === 'rejected'; });
+      syncPartial(); cur.ms = baseMs+Date.now()-t0; saveDraft(); sub='plan'; renderRes();
+      if (failed) { err.textContent = errCopy(failed.reason); err.hidden=false; if (failed.reason.code === 'cancelled') toast(t('tt_stopped')); }
+      go('res');
     } catch (e) {
-      if (e && e.code === 'cancelled') toast(t('tt_stopped'));
-      else { err.textContent = errCopy(e); err.hidden = false; }
-    } finally {
-      ctl = null; $('#genProg').hidden = true; syncAi();
-    }
-  });
+      if (e.code === 'cancelled') toast(t('tt_stopped')); else { err.textContent=errCopy(e); err.hidden=false; }
+    } finally { ctl=null; finishRun(); syncAi(); renderRes(); }
+  }
+  async function expandPart(part) {
+    if (ctl || ctlA || !cur.source || !hasComplete(part)) return;
+    if (!configured()) { toast(t('e_noai')); return; }
+    if (!window.confirm(t('expand_warning'))) return;
+    var src=cur.source, previousMs=cur.ms, t0=Date.now();
+    ctl=new AbortController(); syncAi(); beginRun({plan:true,notes:true,slides:true}); run.saved=true;
+    $('#genProg').scrollIntoView({block:'center'});
+    try {
+      var value=await askPart(part === 'notes' ? notesPrompt(src.values,src.notesTpl,cur.plan,true,cur.notes) : slidesPrompt(src.values,cur.plan,true,cur.slides),part,part === 'notes' ? 6500 : 4000);
+      cur[part]=part === 'notes' ? checkedNotes(value,src.values) : checkedSlides(value);
+      cur.ms=previousMs+Date.now()-t0; cur.logged=false; if(cur.errors) delete cur.errors[part]; markSaved(part); toast(t('expanded'));
+    } catch(e) { $('#genErr').textContent=t('expand_failure')+' '+errCopy(e); $('#genErr').hidden=false; }
+    finally { ctl=null; finishRun(); syncAi(); renderRes(); }
+  }
+  $('#genGo').addEventListener('click', function () { generate(false); });
+  window.addEventListener('beforeunload',function(e){if(ctl || ctlA){e.preventDefault();e.returnValue='';}});
 
   /* ---------- result rendering ---------- */
   function ed(path, val, cls, tag) {
@@ -752,6 +806,7 @@
     return t('tm_sum', { n: log.length, t: fmtMin(saved) });
   }
   function timeCard() {
+    if (cur.partial) return '';
     if (cur.example) return '<div class="sheet note">' + esc(t('tm_demo')) + '</div>';
     var sec = Math.round(cur.ms / 1000), ts = Math.floor(sec / 60) + ' ' + t('u_m') + ' ' + (sec % 60) + ' ' + t('u_s');
     return '<div class="sheet timecard"><div class="lbl">' + esc(t('tm_t')) + '</div>' +
@@ -762,13 +817,15 @@
       '<p class="note">' + esc(logSummary()) + '</p></div>';
   }
   function renderRes() {
-    var body = sub === 'plan' ? renderPlan() : sub === 'notes' ? renderNotes() : renderSlides();
+    var body = !hasComplete(sub) ? '<p class="note">' + esc(t('empty_part')) + '</p>' : sub === 'plan' ? renderPlan() : sub === 'notes' ? renderNotes() : renderSlides();
     $('#resRoot').innerHTML =
+      (cur.partial ? '<div class="warnbar"><b>' + esc(t('partial')) + '</b>' + Object.keys(cur.errors || {}).map(function(k){return '<p>' + esc(t(k === 'notes' ? 'sb_notes' : 'dt_slides')) + ': ' + esc(cur.errors[k]) + '</p>';}).join('') + '<button class="btn ghost" type="button" data-act="resume"' + (ctl || ctlA ? ' disabled' : '') + '>' + esc(t('resume')) + '</button></div>' : '') +
       '<div class="warnbar"><b>' + esc(cur.example ? t('r_demo_b') : t('r_draft_b')) + '</b> ' + esc(cur.example ? t('r_demo_t') : t('r_draft_t')) + ' ' +
       (cur.tpls && cur.tpls.length ? esc(t('r_built', { n: cur.tpls.join(', ') })) + ' ' : '') + esc(t('r_edit')) + '</div>' +
       '<div class="exports"><button class="btn" type="button" data-act="docx">' + esc(t('r_docx')) + '</button>' +
       '<button class="btn" type="button" data-act="pptx">' + esc(t('r_pptx')) + '</button>' +
       '<button class="btn ghost" type="button" data-act="new">' + esc(t('r_new')) + '</button></div>' +
+      (cur.source ? '<div class="btns"><button class="btn ghost" data-expand="notes"' + (ctl || ctlA || !hasComplete('notes') ? ' disabled' : '') + '>' + esc(t('expand_notes')) + '</button><button class="btn ghost" data-expand="slides"' + (ctl || ctlA || !hasComplete('slides') ? ' disabled' : '') + '>' + esc(t('expand_slides')) + '</button></div>' : '') +
       timeCard() +
       '<div class="subtabs" role="tablist">' + [['plan', t('sb_plan')], ['notes', t('sb_notes')], ['slides', t('sb_slides', { n: cur.slides.length })]].map(function (x) {
         return '<button role="tab" data-sub="' + x[0] + '" aria-selected="' + (sub === x[0]) + '">' + esc(x[1]) + '</button>';
@@ -785,9 +842,11 @@
     if (e.target.id === 'manual') { cur.manual = e.target.value; saveDraft(); }
   });
   $('#resRoot').addEventListener('click', function (e) {
+    var expansion = e.target.closest('[data-expand]'); if (expansion) { expandPart(expansion.dataset.expand); return; }
     var s = e.target.closest('[data-sub]');
     if (s) { sub = s.dataset.sub; renderRes(); return; }
     var a = e.target.closest('[data-act]'); if (!a) return;
+    if (a.dataset.act === 'resume') { generate(true); return; }
     if (a.dataset.act === 'docx') exportDocx();
     else if (a.dataset.act === 'pptx') exportPptx();
     else if (a.dataset.act === 'new') go('new');
@@ -812,6 +871,7 @@
   function lines(x) { return str(x).split(/\n+/).filter(function (y) { return y.trim(); }); }
   async function exportDocx() {
     var X = window.docx;
+    if (!hasComplete('notes')) { toast(t('empty_part')); return; }
     if (!X) { toast(t('tt_docx_lib')); return; }
     try {
       var p = cur.plan, n = cur.notes, ch = [];
@@ -848,6 +908,7 @@
     } catch (e) { toast(t('tt_docx_fail')); }
   }
   async function exportPptx() {
+    if (!hasComplete('slides')) { toast(t('empty_part')); return; }
     if (!window.PptxGenJS) { toast(t('tt_pptx_lib')); return; }
     try {
       var x = new window.PptxGenJS();
@@ -875,10 +936,10 @@
     $$('[data-i18n-ph]').forEach(function (el) { el.placeholder = t(el.dataset.i18nPh); });
     $$('[data-i18n-aria]').forEach(function (el) { el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
     $$('[data-lang]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
-    $('#fLang').value = lang;
+    if (!$('#fLang').dataset.initialized) { $('#fLang').value = lang; $('#fLang').dataset.initialized='true'; }
     fillProfSelect(); fillForm(false); srcCount(); syncAi();
     if (cur.example) cur = clone(DEMO[lang]);
-    renderLib(); renderRes();
+    renderLib(); renderRes(); if (run && ctl) renderRun();
   }
   $$('[data-lang]').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -893,6 +954,7 @@
 
   syncTheme();
   $('#orKey').value = keyNow(); $('#orModel').value = modelNow(); $('#apiBase').value = baseNow();
+  $('#apiStream').checked = store.get('su_stream',true) !== false;
   $('#rememberKey').checked = !!store.get('or_key', '');
   function syncPreset() { $('#apiPreset').value = baseNow().includes('discovery-api.intern-ai.org.cn') ? 'intern' : baseNow() === 'https://openrouter.ai/api/v1' ? 'openrouter' : 'custom'; }
   syncPreset();
@@ -906,6 +968,7 @@
     if (!validBase(base) || !key || !model) { $('#apiMessage').textContent = t('api_invalid'); return false; }
     if (base.replace(/\/+$/, '') !== baseNow().replace(/\/+$/, '') && !window.confirm(lang === 'kk' ? 'Кілт пен материалдар осы API мекенжайына жіберіледі: ' + base : 'Ключ и материалы будут отправляться по адресу: ' + base + '. Продолжить?')) return false;
     if (ctl || ctlA) { $('#apiMessage').textContent = lang === 'kk' ? 'Алдымен генерацияны тоқтатыңыз.' : 'Сначала остановите генерацию.'; return false; }
+    store.set('su_stream',$('#apiStream').checked);
     memoryKey = key; memoryBase = base; memoryModel = model;
     try { sessionStorage.setItem('su_api_key', key); } catch (_) {}
     var persisted = store.set('su_api_base', base) && store.set('or_model', model);

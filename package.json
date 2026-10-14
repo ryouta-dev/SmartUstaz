@@ -1,9 +1,12 @@
 {
   "name": "smartustaz",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "scripts": {
-    "test": "node tests/smoke.cjs"
+    "test": "node tests/transport.cjs && node tests/generation.cjs && node tests/smoke.cjs",
+    "test:transport": "node tests/transport.cjs",
+    "test:generation": "node tests/generation.cjs",
+    "test:smoke": "node tests/smoke.cjs"
   },
   "devDependencies": {
     "playwright": "1.63.0"
