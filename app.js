@@ -35,6 +35,11 @@
     ai_wait: ['Ключ не задан', 'Кілт берілмеген'], ai_ok: ['ИИ готов (OpenRouter)', 'ЖИ дайын (OpenRouter)'], ai_off: ['Ключ не задан: см. блок ниже', 'Кілт берілмеген: төмендегі блокты қараңыз'],
     theme: ['Сменить тему', 'Тақырыпты ауыстыру'],
     tab_new: ['Создать', 'Жасау'], tab_lib: ['Образцы', 'Үлгілер'], tab_res: ['Результат', 'Нәтиже'],
+    auth_title: ['Аккаунт SmartUstaz', 'SmartUstaz аккаунты'], auth_help: ['Создайте аккаунт или войдите. Для подключения укажите публичные параметры проекта в supabase-config.js. Локальные материалы пока не загружаются в облако.', 'Аккаунт ашыңыз немесе кіріңіз. Қосу үшін жоба параметрлерін supabase-config.js файлына енгізіңіз. Жергілікті материалдар әзірше бұлтқа жүктелмейді.'],
+    auth_email: ['Электронная почта', 'Электрондық пошта'], auth_password: ['Пароль', 'Құпиясөз'], auth_signin: ['Войти', 'Кіру'], auth_signup: ['Регистрация', 'Тіркелу'], auth_signout: ['Выйти', 'Шығу'],
+    auth_not_configured: ['Supabase не настроен или SDK недоступен.', 'Supabase бапталмаған немесе SDK қолжетімсіз.'], auth_signed_out: ['Вы не вошли в аккаунт.', 'Аккаунтқа кірмедіңіз.'], auth_signed_in: ['Вход выполнен: {email}', 'Кірдіңіз: {email}'], auth_check_email: ['Проверьте почту, чтобы подтвердить регистрацию.', 'Тіркелуді растау үшін поштаңызды тексеріңіз.'], auth_error: ['Не удалось выполнить действие. Проверьте данные и настройки Supabase.', 'Операция орындалмады. Деректер мен Supabase параметрлерін тексеріңіз.'],
+    auth_required: ['Войдите в аккаунт, чтобы использовать централизованный ИИ.', 'Орталықтандырылған ЖИ-ді пайдалану үшін аккаунтқа кіріңіз.'], gateway_managed: ['При подключённом Supabase провайдер и модель задаются на сервере; локальные поля не применяются.', 'Supabase қосылғанда провайдер мен модель серверде бапталады; жергілікті өрістер қолданылмайды.'], gateway_test_confirm: ['Проверка отправит платный запрос и займёт одну генерацию квоты. Продолжить?', 'Тексеру ақылы сұрау жібереді және бір генерация квотасын жұмсайды. Жалғастыру керек пе?'],
+    ai_gateway_auth: ['Аккаунт подключён · шлюз проверится при первом запросе', 'Аккаунт қосылды · шлюз алғашқы сұрауда тексеріледі'],
     c_kicker: ['Новое занятие', 'Жаңа сабақ'], c_title: ['Меньше рутины. Больше преподавания.', 'Күнделікті жұмыс аз. Оқытуға уақыт көп.'],
     s1_t: ['Специальность', 'Мамандық'], s1_p: ['Выберите свою специальность. ИИ подберёт примеры и терминологию из вашей профессии.', 'Мамандығыңызды таңдаңыз. ИИ кәсібіңізге сай мысалдар мен терминдерді таңдайды.'],
     f_prof: ['Специальность из списка', 'Тізімдегі мамандық'], f_spec: ['Специальность и курс', 'Мамандық және курс'], f_mod: ['Дисциплина или модуль', 'Пән немесе модуль'],
@@ -212,12 +217,19 @@
   function keyNow() { return memoryKey; }
   var memoryModel = String(store.get('or_model', '') || '');
   var memoryBase = String(store.get('su_api_base', '') || (memoryModel ? 'https://openrouter.ai/api/v1' : 'https://discovery-api.intern-ai.org.cn/v1'));
+  var authUser = null;
   function modelNow() { return memoryModel; }
   function baseNow() { return memoryBase; }
   function validBase(value) {
     try { var u = new URL(value); return !u.username && !u.password && !u.search && !u.hash && (u.protocol === 'https:' || (u.protocol === 'http:' && ['localhost','127.0.0.1','[::1]'].includes(u.hostname))); } catch (_) { return false; }
   }
-  function configured() { return !!(keyNow() && modelNow() && validBase(baseNow())); }
+  function gatewayEnabled() {
+    var config = window.SMARTUSTAZ_SUPABASE_CONFIG || {};
+    return typeof config.url === 'string' && /^https:\/\//i.test(config.url) &&
+      typeof config.publishableKey === 'string' && config.publishableKey.length > 0;
+  }
+  function legacyConfigured() { return !!(keyNow() && modelNow() && validBase(baseNow())); }
+  function configured() { return gatewayEnabled() ? !!authUser : legacyConfigured(); }
   function refreshAi() { aiState = configured() ? 'ok' : 'off'; syncAi(); }
   function mkErr(code) { var e = new Error(code); e.code = code; return e; }
   function parseLoose(text) {
@@ -233,7 +245,17 @@
     throw mkErr('invalid_json');
   }
   async function requestText(prompt, opts) {
-    if (!configured()) throw mkErr('not_granted');
+    opts = opts || {};
+    if (gatewayEnabled()) {
+      if (!authUser) throw mkErr('auth_required');
+      var gateway = await window.SmartAuth.getGatewayConfig();
+      var idempotencyKey = window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : '';
+      if (!idempotencyKey) throw mkErr('not_granted');
+      return SmartApi.request({ gateway: gateway }, prompt, Object.assign({}, opts, {
+        operationType: opts.operationType || 'generation', idempotencyKey: idempotencyKey
+      }));
+    }
+    if (!legacyConfigured()) throw mkErr('not_granted');
     return SmartApi.request({ base: baseNow(), key: keyNow(), model: modelNow(), stream: store.get('su_stream', true) !== false }, prompt, opts);
   }
 
@@ -242,7 +264,7 @@
   function syncAi() {
     var el = $('#aiState');
     el.className = 'ai-state ' + (aiState === 'ok' ? 'ok' : aiState === 'off' ? 'off' : '');
-    el.lastChild.textContent = t(aiState === 'ok' ? 'ai_ok' : aiState === 'off' ? 'ai_off' : 'ai_wait');
+    el.lastChild.textContent = t(gatewayEnabled() ? (authUser ? 'ai_gateway_auth' : 'auth_required') : aiState === 'ok' ? 'ai_ok' : aiState === 'off' ? 'ai_off' : 'ai_wait');
     $('#genGo').disabled = !!ctl || !!ctlA;
     $('#anaGo').disabled = !!ctl || !!ctlA;
   }
@@ -368,7 +390,7 @@
     var text = $('#src').value.trim();
     var err = $('#anaErr'); err.hidden = true;
     if (text.length < 300) { err.textContent = t('e_short'); err.hidden = false; return; }
-    if (!configured()) { err.textContent = t('e_noai'); err.hidden = false; return; }
+    if (!configured()) { err.textContent = t(gatewayEnabled() ? 'auth_required' : 'e_noai'); err.hidden = false; return; }
     if (ctl || ctlA) return;
     ctlA = new AbortController(); syncAi();
     $('#anaProg').hidden = false; $('#anaGo').disabled = true; $('#anaTxt').textContent = t('l_ana');
@@ -378,7 +400,7 @@
       '{"name":"короткое название образца, до 6 слов","docType":"plan | notes | slides | other","structure":[{"title":"название раздела или этапа","purpose":"что в нём происходит, одной фразой","approxMinutes":число или null}],"headerFields":["поля шапки документа"],"timing":"как распределено время","terminology":["термины и обозначения автора"],"pedagogicalApproach":"методы и подходы автора","toneAndStyle":"тон и стиль изложения","formatRules":["правила оформления, видимые в образце"],"notableElements":["особые элементы: кейсы, уровни заданий, рефлексия и т.п."],"styleSummary":"2-3 предложения о том, чем этот образец отличается от типового"}\n\n' +
       'Образец:\n"""\n' + text.slice(0, 24000) + '\n"""';
     try {
-      var prof = await sample.json(prompt, { signal: ctlA.signal, cache: false, onText: function (u) { $('#anaTxt').textContent = t('l_ana2', { c: u.text.length.toLocaleString('ru-RU') }); } });
+      var prof = await sample.json(prompt, { signal: ctlA.signal, cache: false, operationType: 'template_analysis', onText: function (u) { $('#anaTxt').textContent = t('l_ana2', { c: u.text.length.toLocaleString('ru-RU') }); } });
       if (!prof || !Array.isArray(prof.structure) || !prof.structure.length) { var bad = new Error('shape'); bad.code = 'invalid_json'; throw bad; }
       var chosen = $('#tplType').value;
       var tpl = {
@@ -602,11 +624,11 @@
     }
     return values.filter(Boolean).join('\n\n').slice(-3000);
   }
-  async function askPart(prompt, part, maxTokens) {
+  async function askPart(prompt, part, maxTokens, operationType) {
     var state = run.parts[part]; state.status = 'work'; state.last = Date.now(); renderRun();
     try {
       var value = await sample.json(prompt, {
-        signal: ctl.signal, maxTokens: maxTokens,
+        signal: ctl.signal, maxTokens: maxTokens, operationType: operationType || 'generation',
         onText: function (u) {
           state.chars = u.text.length; state.last = Date.now(); state.thinking = false;
           $('#livePanel').hidden = false;
@@ -684,7 +706,7 @@
   async function generate(resume) {
     var err = $('#genErr'); err.hidden = true;
     if (ctl || ctlA) return;
-    if (!configured()) { err.textContent = t('e_noai'); err.hidden = false; return; }
+    if (!configured()) { err.textContent = t(gatewayEnabled() ? 'auth_required' : 'e_noai'); err.hidden = false; return; }
     var src = resume && cur.source ? cur.source : { values:formVals(), planTpl:tplById($('#fPlanTpl').value), notesTpl:tplById($('#fNotesTpl').value) };
     var v = src.values;
     if (!v || !v.topic || v.topic.length < 5) { err.textContent = t('e_topic'); err.hidden = false; return; }
@@ -717,13 +739,13 @@
   }
   async function expandPart(part) {
     if (ctl || ctlA || !cur.source || !hasComplete(part)) return;
-    if (!configured()) { toast(t('e_noai')); return; }
+    if (!configured()) { toast(t(gatewayEnabled() ? 'auth_required' : 'e_noai')); return; }
     if (!window.confirm(t('expand_warning'))) return;
     var src=cur.source, previousMs=cur.ms, t0=Date.now();
     ctl=new AbortController(); syncAi(); beginRun({plan:true,notes:true,slides:true}); run.saved=true;
     $('#genProg').scrollIntoView({block:'center'});
     try {
-      var value=await askPart(part === 'notes' ? notesPrompt(src.values,src.notesTpl,cur.plan,true,cur.notes) : slidesPrompt(src.values,cur.plan,true,cur.slides),part,part === 'notes' ? 6500 : 4000);
+      var value=await askPart(part === 'notes' ? notesPrompt(src.values,src.notesTpl,cur.plan,true,cur.notes) : slidesPrompt(src.values,cur.plan,true,cur.slides),part,part === 'notes' ? 6500 : 4000,'expansion');
       cur[part]=part === 'notes' ? checkedNotes(value,src.values) : checkedSlides(value);
       cur.ms=previousMs+Date.now()-t0; cur.logged=false; if(cur.errors) delete cur.errors[part]; markSaved(part); toast(t('expanded'));
     } catch(e) { $('#genErr').textContent=t('expand_failure')+' '+errCopy(e); $('#genErr').hidden=false; }
@@ -964,6 +986,7 @@
     if (this.value === 'custom') $('#apiBase').focus();
   });
   function applySettings() {
+    if (gatewayEnabled()) { $('#apiMessage').textContent = t('gateway_managed'); return false; }
     var base = $('#apiBase').value.trim().replace(/\/+$/, ''), key = $('#orKey').value.trim(), model = $('#orModel').value.trim();
     if (!validBase(base) || !key || !model) { $('#apiMessage').textContent = t('api_invalid'); return false; }
     if (base.replace(/\/+$/, '') !== baseNow().replace(/\/+$/, '') && !window.confirm(lang === 'kk' ? 'Кілт пен материалдар осы API мекенжайына жіберіледі: ' + base : 'Ключ и материалы будут отправляться по адресу: ' + base + '. Продолжить?')) return false;
@@ -981,7 +1004,10 @@
   $('#orSave').addEventListener('click', applySettings);
   $('#keyToggle').addEventListener('click', function () { var show = $('#orKey').type === 'password'; $('#orKey').type = show ? 'text' : 'password'; this.setAttribute('aria-pressed', String(show)); this.textContent = t(show ? 'api_hide' : 'api_show'); });
   $('#apiTest').addEventListener('click', async function () {
-    if (!applySettings()) return;
+    if (gatewayEnabled()) {
+      if (!authUser) { $('#apiMessage').textContent = t('auth_required'); return; }
+      if (!window.confirm(t('gateway_test_confirm'))) return;
+    } else if (!applySettings()) return;
     this.disabled = true; $('#orSave').disabled = true; $('#orClear').disabled = true; $('#apiMessage').textContent = t('api_testing');
     try { await requestText('Reply with OK.'); $('#apiMessage').textContent = t('api_success'); }
     catch (e) { $('#apiMessage').textContent = errCopy(e); }
@@ -992,6 +1018,44 @@
     memoryKey = ''; try { sessionStorage.removeItem('su_api_key'); localStorage.removeItem('or_key'); } catch (_) {}
     $('#orKey').value = ''; $('#apiMessage').textContent = t('or_cleared'); refreshAi();
   });
+  function renderAuth(user) {
+    authUser = user || null;
+    var signedIn = !!user;
+    $('#authState').textContent = signedIn ? t('auth_signed_in', { email: user.email || '' }) : t('auth_signed_out');
+    $('#authSignIn').hidden = signedIn;
+    $('#authSignUp').hidden = signedIn;
+    $('#authSignOut').hidden = !signedIn;
+    $('#authPassword').value = '';
+    refreshAi();
+  }
+  var auth = window.SmartAuth;
+  if (gatewayEnabled()) $('#gatewayModeHint').hidden = false;
+  if (!auth || !auth.isConfigured()) {
+    $('#authState').textContent = t('auth_not_configured');
+    $('#authSignIn').disabled = true;
+    $('#authSignUp').disabled = true;
+  } else {
+    auth.onAuthStateChange(function (user) { renderAuth(user); });
+    auth.getSession().then(function (user) { renderAuth(user); }).catch(function () { renderAuth(null); });
+    $('#authSignIn').addEventListener('click', async function () {
+      try {
+        await auth.signIn($('#authEmail').value.trim(), $('#authPassword').value);
+      } catch (_) {
+        $('#authState').textContent = t('auth_error');
+      }
+    });
+    $('#authSignUp').addEventListener('click', async function () {
+      try {
+        var result = await auth.signUp($('#authEmail').value.trim(), $('#authPassword').value);
+        if (!result.user || !result.session) $('#authState').textContent = t('auth_check_email');
+      } catch (_) {
+        $('#authState').textContent = t('auth_error');
+      }
+    });
+    $('#authSignOut').addEventListener('click', async function () {
+      try { await auth.signOut(); } catch (_) { $('#authState').textContent = t('auth_error'); }
+    });
+  }
   $('#aiState').setAttribute('role', 'button'); $('#aiState').tabIndex = 0;
   $('#aiState').addEventListener('click', function () { go('api'); });
   $('#aiState').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go('api'); } });

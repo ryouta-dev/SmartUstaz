@@ -225,6 +225,18 @@ details ul{margin:6px 0 0;padding-left:20px;font-size:14px;color:var(--ink-2);di
   <div id="genErr" class="err run-error" role="alert" hidden></div>
   <section class="view" id="v-api" hidden>
     <div class="page-h"><div class="lbl" data-i18n="api_kicker"></div><h1 data-i18n="api_title"></h1><p class="lead" data-i18n="api_lead"></p></div>
+    <div class="sheet step" id="authPanel">
+      <h2 data-i18n="auth_title"></h2>
+      <p class="note" data-i18n="auth_help"></p>
+      <div class="field"><label for="authEmail" data-i18n="auth_email"></label><input type="email" id="authEmail" autocomplete="email"></div>
+      <div class="field"><label for="authPassword" data-i18n="auth_password"></label><input type="password" id="authPassword" autocomplete="current-password"></div>
+      <p id="authState" class="note" role="status" aria-live="polite"></p>
+      <div class="btns">
+        <button class="btn" id="authSignIn" type="button" data-i18n="auth_signin"></button>
+        <button class="btn ghost" id="authSignUp" type="button" data-i18n="auth_signup"></button>
+        <button class="btn warn" id="authSignOut" type="button" data-i18n="auth_signout" hidden></button>
+      </div>
+    </div>
     <div class="sheet step">
       <div class="field"><label for="apiPreset" data-i18n="api_provider"></label><select id="apiPreset"><option value="intern">Intern AI Discovery</option><option value="openrouter">OpenRouter</option><option value="custom" data-i18n="api_custom"></option></select></div>
       <div class="field"><label for="apiBase">Base URL</label><input type="url" id="apiBase" autocomplete="off" spellcheck="false" placeholder="https://discovery-api.intern-ai.org.cn/v1"><span class="note" data-i18n="api_base_hint"></span></div>
@@ -233,6 +245,7 @@ details ul{margin:6px 0 0;padding-left:20px;font-size:14px;color:var(--ink-2);di
       <label class="remember"><input type="checkbox" id="apiStream" checked><span data-i18n="api_stream"></span></label><p class="note" data-i18n="stream_help"></p>
       <label class="remember"><input type="checkbox" id="rememberKey"><span data-i18n="api_remember"></span></label>
       <p class="note" data-i18n="api_privacy"></p>
+      <p id="gatewayModeHint" class="note" data-i18n="gateway_managed" hidden></p>
       <div id="apiMessage" class="note" role="status" aria-live="polite"></div>
       <div class="btns"><button class="btn" id="orSave" type="button" data-i18n="api_save"></button><button class="btn ghost" id="apiTest" type="button" data-i18n="api_test"></button><button class="btn warn" id="orClear" type="button" data-i18n="api_clear"></button></div>
     </div>
@@ -351,6 +364,9 @@ details ul{margin:6px 0 0;padding-left:20px;font-size:14px;color:var(--ink-2);di
 <div id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="api-client.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3"></script>
+<script src="supabase-config.js"></script>
+<script src="supabase-auth.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

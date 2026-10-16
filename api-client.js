@@ -37,15 +37,30 @@
       if (choice.finish_reason) sawFinish = true;
     }
     try {
-      var body = { model: config.model, stream: config.stream !== false, messages: [{ role: 'user', content: prompt }] };
-      if (opts.maxTokens) body.max_tokens = opts.maxTokens;
-      var res = await (opts.fetch || fetch)(config.base.replace(/\/+$/, '') + '/chat/completions', {
+      var gateway = config.gateway;
+      var body = gateway ? {
+        operationType: opts.operationType || 'generation',
+        idempotencyKey: opts.idempotencyKey,
+        prompt: prompt,
+        maxOutputTokens: opts.maxTokens
+      } : { model: config.model, stream: config.stream !== false, messages: [{ role: 'user', content: prompt }] };
+      if (!gateway && opts.maxTokens) body.max_tokens = opts.maxTokens;
+      var headers = { 'Content-Type': 'application/json' };
+      if (gateway) {
+        if (!gateway.url || !gateway.accessToken || !gateway.publishableKey || !body.idempotencyKey) throw fail('not_granted');
+        headers.Authorization = 'Bearer ' + gateway.accessToken;
+        headers.apikey = gateway.publishableKey;
+      } else {
+        headers.Authorization = 'Bearer ' + config.key;
+      }
+      var endpoint = gateway ? gateway.url : config.base.replace(/\/+$/, '') + '/chat/completions';
+      var res = await (opts.fetch || fetch)(endpoint, {
         method: 'POST', redirect: 'error', credentials: 'omit', referrerPolicy: 'no-referrer',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + config.key },
+        headers: headers,
         body: JSON.stringify(body), signal: ctl.signal
       });
       resetIdle();
-      if (!res.ok) throw fail(res.status === 401 || res.status === 403 ? 'session_expired' : res.status === 429 ? 'rate_limited' : res.status === 413 ? 'prompt_too_large' : 'http', res.status);
+      if (!res.ok) throw fail(res.status === 401 || res.status === 403 ? 'session_expired' : res.status === 429 ? 'rate_limited' : res.status === 413 ? 'prompt_too_large' : res.status === 409 ? 'duplicate_request' : 'http', res.status);
       var isSse = (res.headers.get('content-type') || '').toLowerCase().includes('text/event-stream');
       if (!isSse) {
         var json = await res.json();

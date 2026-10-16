@@ -6,7 +6,11 @@
     "test": "node tests/transport.cjs && node tests/generation.cjs && node tests/smoke.cjs",
     "test:transport": "node tests/transport.cjs",
     "test:generation": "node tests/generation.cjs",
-    "test:smoke": "node tests/smoke.cjs"
+    "test:auth": "node tests/auth.cjs",
+    "test:gateway": "node tests/gateway.cjs",
+    "test:smoke": "node tests/smoke.cjs",
+    "spike:ai-gateway": "node tools/ai-gateway-spike.cjs",
+    "test:db": "supabase test db --local"
   },
   "devDependencies": {
     "playwright": "1.63.0"
