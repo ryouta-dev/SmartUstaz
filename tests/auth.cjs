@@ -5,9 +5,17 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 const authSource = fs.readFileSync(path.join(root, 'supabase-auth.js'), 'utf8');
+let capturedFetch;
 
 function loadAuth(config, sdk) {
-  const window = { SMARTUSTAZ_SUPABASE_CONFIG: config, supabase: sdk };
+  const window = {
+    SMARTUSTAZ_SUPABASE_CONFIG: config,
+    supabase: sdk,
+    async fetch(url, options) {
+      capturedFetch = { url, options };
+      return { ok: true, async json() { return { deepLink: 'https://t.me/SmartUstazBot?start=' + 'a'.repeat(64), expiresInSeconds: 600 }; } };
+    },
+  };
   vm.runInNewContext(authSource, { window });
   return window.SmartAuth;
 }
@@ -27,7 +35,7 @@ async function main() {
   const client = {
     auth: {
       onAuthStateChange(callback) { authListener = callback; return { data: { subscription: { unsubscribe() {} } } }; },
-      async getSession() { return { data: { session: { user } }, error: null }; },
+      async getSession() { return { data: { session: { user, access_token: 'user-access-token' } }, error: null }; },
       async signInWithPassword(credentials) { calls.push(['signIn', credentials]); return { data: { user }, error: null }; },
       async signUp(credentials) { calls.push(['signUp', credentials]); return { data: { user, session: null }, error: null }; },
       async signOut() { calls.push(['signOut']); return { error: null }; },
@@ -41,6 +49,11 @@ async function main() {
   assert.equal((await auth.signIn('teacher@example.com', 'secret')).user, user);
   assert.equal((await auth.signUp('teacher@example.com', 'secret')).session, null);
   await auth.signOut();
+  const telegramLink = await auth.createTelegramLink();
+  assert.equal(telegramLink.expiresInSeconds, 600);
+  assert.equal(capturedFetch.url, 'https://example.supabase.co/functions/v1/telegram-link');
+  assert.equal(capturedFetch.options.headers.Authorization, 'Bearer user-access-token');
+  assert.equal('service_role' in capturedFetch.options.headers, false);
 
   let observedUser;
   auth.onAuthStateChange((nextUser) => { observedUser = nextUser; });

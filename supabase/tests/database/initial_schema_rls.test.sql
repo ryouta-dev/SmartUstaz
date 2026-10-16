@@ -1,6 +1,6 @@
 begin;
 
-select plan(27);
+select plan(34);
 
 insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
 values
@@ -35,6 +35,9 @@ select has_table('public', 'profiles');
 select has_table('public', 'documents');
 select has_table('public', 'templates');
 select has_table('public', 'generation_jobs');
+select has_table('public', 'telegram_links');
+select has_table('public', 'telegram_link_tokens');
+select has_table('public', 'telegram_updates');
 select is((select count(*) from public.profiles), 1::bigint, 'user A sees only own profile');
 select is((select count(*) from public.profiles where id = '10000000-0000-0000-0000-000000000002'), 0::bigint, 'user A cannot see user B profile');
 select is((select count(*) from public.documents), 1::bigint, 'user A sees only own document');
@@ -59,6 +62,12 @@ select is((select version from public.documents where id = '20000000-0000-0000-0
 insert into public.templates (user_id, name, template_type, content)
 values ('10000000-0000-0000-0000-000000000001', 'Created by A', 'notes', '{"profile":{}}');
 select is((select count(*) from public.templates where name = 'Created by A'), 1::bigint, 'user A can create own template');
+insert into public.templates (user_id, name, template_type, content, local_id)
+values ('10000000-0000-0000-0000-000000000001', 'Imported once', 'plan', '{"profile":{}}', 'template:source-1');
+select throws_ok(
+  $$insert into public.templates (user_id, name, template_type, content, local_id) values ('10000000-0000-0000-0000-000000000001', 'Imported twice', 'plan', '{"profile":{}}', 'template:source-1')$$,
+  '23505', null, 'repeat local import is rejected by per-user stable ID'
+);
 select throws_ok(
   $$insert into public.templates (user_id, name, template_type, content) values ('10000000-0000-0000-0000-000000000002', 'Cross-owner', 'plan', '{}')$$,
   '42501', null, 'user A cannot create a template for user B'
@@ -73,6 +82,9 @@ select throws_ok(
 );
 select ok(not has_table_privilege('anon', 'public.documents', 'select'), 'anonymous role has no document access');
 select ok(not has_table_privilege('authenticated', 'public.generation_jobs', 'insert'), 'authenticated role cannot insert generation jobs');
+select ok(not has_table_privilege('authenticated', 'public.telegram_links', 'select'), 'authenticated role cannot read Telegram link table directly');
+select ok(not has_table_privilege('authenticated', 'public.telegram_link_tokens', 'select'), 'authenticated role cannot read Telegram token table');
+select ok(not has_table_privilege('authenticated', 'public.telegram_updates', 'select'), 'authenticated role cannot read Telegram update table');
 
 select * from finish();
 rollback;

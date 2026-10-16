@@ -235,6 +235,7 @@ details ul{margin:6px 0 0;padding-left:20px;font-size:14px;color:var(--ink-2);di
         <button class="btn" id="authSignIn" type="button" data-i18n="auth_signin"></button>
         <button class="btn ghost" id="authSignUp" type="button" data-i18n="auth_signup"></button>
         <button class="btn warn" id="authSignOut" type="button" data-i18n="auth_signout" hidden></button>
+        <button class="btn ghost" id="telegramLink" type="button" data-i18n="telegram_link" hidden></button>
       </div>
     </div>
     <div class="sheet step">
@@ -351,8 +352,11 @@ details ul{margin:6px 0 0;padding-left:20px;font-size:14px;color:var(--ink-2);di
       <p class="note" data-i18n="l_move_p"></p>
       <div class="btns">
         <button class="btn ghost" id="libExport" type="button" data-i18n="l_exp"></button>
+        <button class="btn ghost" id="cloudImport" type="button" data-i18n="cloud_import" hidden></button>
+        <button class="btn ghost" id="cloudRestore" type="button" data-i18n="cloud_restore" hidden></button>
         <label class="file"><span data-i18n="l_imp"></span><input type="file" id="libImport" accept=".json"></label>
       </div>
+      <p id="cloudStatus" class="note" role="status" aria-live="polite" hidden></p>
     </div>
   </section>
 
@@ -367,6 +371,7 @@ details ul{margin:6px 0 0;padding-left:20px;font-size:14px;color:var(--ink-2);di
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3"></script>
 <script src="supabase-config.js"></script>
 <script src="supabase-auth.js"></script>
+<script src="cloud-repository.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

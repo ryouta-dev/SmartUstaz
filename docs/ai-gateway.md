@@ -1,6 +1,6 @@
 # AI generation gateway
 
-`supabase/functions/ai-generate` is the server-side prototype for the planned centralized AI API. It is not yet connected to the browser UI and must not be treated as a deployed or production-ready service.
+`supabase/functions/ai-generate` is the server-side prototype for the centralized AI API. The browser routes generation, expansion, and template analysis through it when Supabase is configured. It is not deployed or production-validated.
 
 ## Request contract
 
@@ -24,11 +24,13 @@ Configure these only in the Supabase Edge Function environment; never in browser
 - `AI_API_BASE`: HTTPS base URL for an OpenAI-compatible Chat Completions API, without `/chat/completions`.
 - `AI_API_KEY`: provider credential.
 - `AI_MODEL`: centrally selected model identifier.
+- `AI_GENERATION_ENABLED`: explicit kill switch; the function serves requests only when set to the exact string `true`.
+- `APP_ALLOWED_ORIGIN`: exact HTTPS browser origin; requests from other origins and requests without the configured origin are rejected.
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`: Supabase runtime credentials. The service-role key is used only to reserve and update jobs.
 
 The function validates the bearer token with Supabase Auth, accepts no client-supplied provider URL/key/model, enforces a 64 KiB request cap and 40,000-character prompt cap, limits response bytes to 1 MiB and output to 8,192 tokens, and aborts the upstream call after 140 seconds. The database reservation serializes requests per user, allows at most two active jobs, and allows at most 20 jobs in any rolling 24-hour window. Failed and cancelled attempts count toward the quota to prevent repeated paid retries.
 
-CORS currently allows any origin because the static hosting origin has not been finalized; requests still require a valid bearer token and CORS does not enable cookies. Restrict `Access-Control-Allow-Origin` before production deployment.
+The configured `APP_ALLOWED_ORIGIN` must match the browser origin exactly (for GitHub Pages, the origin excludes the `/SmartUstaz/` path). Configure it before enabling AI. The gateway also requires a valid bearer token and never accepts browser-supplied provider configuration.
 
 ## Known boundaries
 

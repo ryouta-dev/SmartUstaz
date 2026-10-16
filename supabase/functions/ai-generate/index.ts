@@ -1,11 +1,23 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
+function configuredOrigin(): string {
+  const value = Deno.env.get('APP_ALLOWED_ORIGIN') || '';
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && url.origin === value ? value : '';
+  } catch {
+    return '';
+  }
+}
+
+const allowedOrigin = configuredOrigin();
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': allowedOrigin || 'null',
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Expose-Headers': 'X-Generation-Job-Id',
   'Cache-Control': 'no-store',
+  'Vary': 'Origin',
 };
 
 const maxRequestBytes = 64 * 1024;
@@ -49,6 +61,9 @@ async function readLimitedBody(request: Request): Promise<string | null> {
 }
 
 Deno.serve(async (request) => {
+  if (!allowedOrigin || request.headers.get('origin') !== allowedOrigin) {
+    return safeError(403, 'origin_not_allowed');
+  }
   if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   if (request.method !== 'POST') return safeError(405, 'method_not_allowed');
   if (Number(request.headers.get('content-length') || 0) > maxRequestBytes) {
@@ -62,7 +77,8 @@ Deno.serve(async (request) => {
   const providerKey = Deno.env.get('AI_API_KEY');
   const providerModel = Deno.env.get('AI_MODEL');
 
-  if (!supabaseUrl || !anonKey || !serviceRoleKey || !providerBase || !providerKey || !providerModel) {
+  if (Deno.env.get('AI_GENERATION_ENABLED') !== 'true'
+    || !supabaseUrl || !anonKey || !serviceRoleKey || !providerBase || !providerKey || !providerModel) {
     return safeError(503, 'service_unavailable');
   }
 

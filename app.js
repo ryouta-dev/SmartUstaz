@@ -40,6 +40,10 @@
     auth_not_configured: ['Supabase не настроен или SDK недоступен.', 'Supabase бапталмаған немесе SDK қолжетімсіз.'], auth_signed_out: ['Вы не вошли в аккаунт.', 'Аккаунтқа кірмедіңіз.'], auth_signed_in: ['Вход выполнен: {email}', 'Кірдіңіз: {email}'], auth_check_email: ['Проверьте почту, чтобы подтвердить регистрацию.', 'Тіркелуді растау үшін поштаңызды тексеріңіз.'], auth_error: ['Не удалось выполнить действие. Проверьте данные и настройки Supabase.', 'Операция орындалмады. Деректер мен Supabase параметрлерін тексеріңіз.'],
     auth_required: ['Войдите в аккаунт, чтобы использовать централизованный ИИ.', 'Орталықтандырылған ЖИ-ді пайдалану үшін аккаунтқа кіріңіз.'], gateway_managed: ['При подключённом Supabase провайдер и модель задаются на сервере; локальные поля не применяются.', 'Supabase қосылғанда провайдер мен модель серверде бапталады; жергілікті өрістер қолданылмайды.'], gateway_test_confirm: ['Проверка отправит платный запрос и займёт одну генерацию квоты. Продолжить?', 'Тексеру ақылы сұрау жібереді және бір генерация квотасын жұмсайды. Жалғастыру керек пе?'],
     ai_gateway_auth: ['Аккаунт подключён · шлюз проверится при первом запросе', 'Аккаунт қосылды · шлюз алғашқы сұрауда тексеріледі'],
+    cloud_import: ['Перенести в облако', 'Бұлтқа көшіру'], cloud_confirm: ['Будут загружены локальные шаблоны и текущий/предыдущий результат. Локальные данные не удаляются; совпадающие записи будут пропущены. Продолжить?', 'Жергілікті үлгілер, ағымдағы және алдыңғы нәтиже бұлтқа жүктеледі. Жергілікті деректер жойылмайды; қайталанатын жазбалар өткізіледі. Жалғастыру керек пе?'],
+    cloud_restore: ['Загрузить из облака', 'Бұлттан жүктеу'], cloud_restore_confirm: ['Облачные шаблоны будут добавлены в локальную библиотеку, а занятия сохранены отдельным JSON-файлом. Текущий результат не заменяется. Продолжить?', 'Бұлттағы үлгілер жергілікті кітапханаға қосылады, ал сабақтар бөлек JSON-файлға сақталады. Ағымдағы нәтиже ауыстырылмайды. Жалғастыру керек пе?'],
+    telegram_link: ['Подключить Telegram', 'Telegram-ды қосу'], telegram_link_confirm: ['Откроется одноразовая ссылка для привязки Telegram. Она действует 10 минут. Продолжить?', 'Telegram-ды байланыстыратын бір реттік сілтеме ашылады. Ол 10 минут жарамды. Жалғастыру керек пе?'],
+    cloud_done: ['Облако: загружено {added}, уже было {skipped}, ошибка {failed}. Локальная копия сохранена.', 'Бұлт: жүктелді {added}, бұрыннан бар {skipped}, қате {failed}. Жергілікті көшірме сақталды.'], cloud_login: ['Для переноса войдите в аккаунт и настройте Supabase.', 'Көшіру үшін аккаунтқа кіріп, Supabase баптаңыз.'],
     c_kicker: ['Новое занятие', 'Жаңа сабақ'], c_title: ['Меньше рутины. Больше преподавания.', 'Күнделікті жұмыс аз. Оқытуға уақыт көп.'],
     s1_t: ['Специальность', 'Мамандық'], s1_p: ['Выберите свою специальность. ИИ подберёт примеры и терминологию из вашей профессии.', 'Мамандығыңызды таңдаңыз. ИИ кәсібіңізге сай мысалдар мен терминдерді таңдайды.'],
     f_prof: ['Специальность из списка', 'Тізімдегі мамандық'], f_spec: ['Специальность и курс', 'Мамандық және курс'], f_mod: ['Дисциплина или модуль', 'Пән немесе модуль'],
@@ -1025,6 +1029,9 @@
     $('#authSignIn').hidden = signedIn;
     $('#authSignUp').hidden = signedIn;
     $('#authSignOut').hidden = !signedIn;
+    $('#telegramLink').hidden = !signedIn || !auth || !auth.isConfigured();
+    $('#cloudImport').hidden = !signedIn || !window.SmartCloud;
+    $('#cloudRestore').hidden = !signedIn || !window.SmartCloud;
     $('#authPassword').value = '';
     refreshAi();
   }
@@ -1055,7 +1062,92 @@
     $('#authSignOut').addEventListener('click', async function () {
       try { await auth.signOut(); } catch (_) { $('#authState').textContent = t('auth_error'); }
     });
+    $('#telegramLink').addEventListener('click', async function () {
+      if (!window.confirm(t('telegram_link_confirm'))) return;
+      this.disabled = true;
+      try {
+        var link = await auth.createTelegramLink();
+        window.location.assign(link.deepLink);
+      } catch (_) { $('#authState').textContent = t('auth_error'); }
+      finally { this.disabled = false; }
+    });
   }
+  $('#cloudImport').addEventListener('click', async function () {
+    var status = $('#cloudStatus');
+    if (!authUser || !window.SmartCloud) { toast(t('cloud_login')); return; }
+    if (!window.confirm(t('cloud_confirm'))) return;
+    this.disabled = true; status.hidden = false; status.textContent = t('api_testing');
+    var counts = { added: 0, skipped: 0, failed: 0 };
+    async function localHash(value) {
+      var bytes = new TextEncoder().encode(JSON.stringify(value));
+      var digest = new Uint8Array(await window.crypto.subtle.digest('SHA-256', bytes));
+      return Array.prototype.map.call(digest, function (byte) { return byte.toString(16).padStart(2, '0'); }).join('');
+    }
+    try {
+      var remote = await Promise.all([window.SmartCloud.listDocuments(), window.SmartCloud.listTemplates()]);
+      var documentIds = new Set(remote[0].map(function (x) { return x.local_id; }).filter(Boolean));
+      var templateIds = new Set(remote[1].map(function (x) { return x.local_id; }).filter(Boolean));
+      var drafts = [];
+      var current = store.get('su_result_v2', null);
+      var previous = store.get('su_result_previous', null);
+      if (current && current.plan && !current.example) drafts.push(['current', current]);
+      if (previous && previous.plan && !previous.example) drafts.push(['previous', previous]);
+      for (var i = 0; i < drafts.length; i++) {
+        var draft = drafts[i][1];
+        var id = 'result:' + drafts[i][0] + ':' + await localHash(draft);
+        if (documentIds.has(id)) { counts.skipped++; continue; }
+        try {
+          await window.SmartCloud.createDocument({ local_id: id, title: str(draft.plan.topic || 'Занятие').slice(0, 200), topic: str(draft.plan.topic || '').slice(0, 1000), document_type: 'bundle', content: { schema: 1, source: 'smartustaz-local', localId: id, result: draft }, status: draft.partial ? 'partial' : 'ready' });
+          documentIds.add(id); counts.added++;
+        } catch (_) { counts.failed++; }
+      }
+      for (var j = 0; j < userTpls.length; j++) {
+        var tpl = userTpls[j], templateId = tpl.cloudLocalId || ('template:' + str(tpl.id).slice(0, 145));
+        if (templateIds.has(templateId)) { counts.skipped++; continue; }
+        try {
+          await window.SmartCloud.createTemplate({ local_id: templateId, name: str(tpl.name).slice(0, 80), template_type: ['plan','notes','slides'].indexOf(tpl.docType) >= 0 ? tpl.docType : 'other', content: { schema: 1, source: 'smartustaz-local', template: tpl } });
+          templateIds.add(templateId); counts.added++;
+        } catch (_) { counts.failed++; }
+      }
+      status.textContent = t('cloud_done', counts);
+    } catch (_) {
+      status.textContent = t('cloud_done', { added: counts.added, skipped: counts.skipped, failed: counts.failed + 1 });
+    } finally { this.disabled = false; }
+  });
+  $('#cloudRestore').addEventListener('click', async function () {
+    var status = $('#cloudStatus');
+    if (!authUser || !window.SmartCloud) { toast(t('cloud_login')); return; }
+    if (!window.confirm(t('cloud_restore_confirm'))) return;
+    this.disabled = true; status.hidden = false; status.textContent = t('api_testing');
+    try {
+      var remote = await Promise.all([window.SmartCloud.listDocuments(), window.SmartCloud.listTemplates()]);
+      var imported = 0, skipped = 0;
+      var nextTemplates = userTpls.slice();
+      remote[1].forEach(function (row) {
+        var payload = row.content && row.content.template;
+        if (!payload || !payload.profile || !Array.isArray(payload.profile.structure) || !payload.name) { skipped++; return; }
+        if (nextTemplates.some(function (item) { return item.cloudRecordId === row.id; })) { skipped++; return; }
+        nextTemplates.push({ id: 'cloud-' + row.id, cloudRecordId: row.id, cloudLocalId: row.local_id, name: str(row.name).slice(0,80), docType: ['plan','notes','slides'].indexOf(row.template_type) >= 0 ? row.template_type : 'other', profile: cleanProfile(payload.profile), added: Date.now() });
+        imported++;
+      });
+      if (imported) {
+        if (!store.set('su_tpl_v1', nextTemplates)) throw new Error('local_storage_unavailable');
+        userTpls = nextTemplates; renderLib();
+      }
+      var saved = 0;
+      if (remote[0].length && dl) {
+        try {
+          await dl.save({ filename: 'smartustaz-cloud-documents.json', data: JSON.stringify({ schema: 1, documents: remote[0] }, null, 2) });
+          saved = remote[0].length;
+        } catch (error) { if (!error || error.code !== 'declined') throw error; }
+      }
+      status.textContent = lang === 'kk'
+        ? 'Бұлттан: үлгі қосылды ' + imported + ', өткізіліп кетті ' + skipped + ', JSON сақталды ' + saved + ' сабақ.'
+        : 'Из облака: добавлено шаблонов ' + imported + ', пропущено ' + skipped + ', занятий в JSON ' + saved + '.';
+    } catch (_) {
+      status.textContent = t('cloud_done', { added: 0, skipped: 0, failed: 1 });
+    } finally { this.disabled = false; }
+  });
   $('#aiState').setAttribute('role', 'button'); $('#aiState').tabIndex = 0;
   $('#aiState').addEventListener('click', function () { go('api'); });
   $('#aiState').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go('api'); } });
