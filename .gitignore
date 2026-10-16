@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+supabase/.env
+supabase/functions/.env
+
+# Supabase CLI
+supabase/.branches/
+supabase/.temp/
+
+# Playwright
+test-results/
+playwright-report/
+
+# OS / editors
+.DS_Store
+Thumbs.db

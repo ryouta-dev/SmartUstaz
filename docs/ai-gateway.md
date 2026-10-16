@@ -30,6 +30,18 @@ Configure these only in the Supabase Edge Function environment; never in browser
 
 The function validates the bearer token with Supabase Auth, accepts no client-supplied provider URL/key/model, enforces a 64 KiB request cap and 40,000-character prompt cap, limits response bytes to 1 MiB and output to 8,192 tokens, and aborts the upstream call after 140 seconds. The database reservation serializes requests per user, allows at most two active jobs, and allows at most 20 jobs in any rolling 24-hour window. Failed and cancelled attempts count toward the quota to prevent repeated paid retries.
 
+### Provider example: River AI
+
+River AI (`https://api.river.ai/v1`) is OpenAI Chat Completions compatible and works through this gateway; it is the recommended way to use it because `api.river.ai` sends no CORS headers and cannot be called from browser code. Set:
+
+```
+AI_API_BASE=https://api.river.ai/v1
+AI_API_KEY=rv_...
+AI_MODEL=deepseek-ai/DeepSeek-V4.1-Flash
+```
+
+Use the exact model id from the River Console (`GET /v1/models` with your key). A ready-to-fill template is `supabase/.env.example`; load it with `supabase secrets set --env-file supabase/.env`.
+
 The configured `APP_ALLOWED_ORIGIN` must match the browser origin exactly (for GitHub Pages, the origin excludes the `/SmartUstaz/` path). Configure it before enabling AI. The gateway also requires a valid bearer token and never accepts browser-supplied provider configuration.
 
 ## Known boundaries

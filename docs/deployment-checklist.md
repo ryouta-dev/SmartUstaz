@@ -14,7 +14,7 @@ Do not deploy the prototype as a public AI service until spending limits and a s
 1. Create a dedicated test project. Set Auth site URL and redirect allow-list to the HTTPS GitHub Pages URL, including the `/SmartUstaz/` path as required by the dashboard.
 2. Apply all migrations in order and run the database tests. Verify user A cannot select or alter user B's rows using two real accounts.
 3. Configure the browser with the project URL and publishable key in `supabase-config.js`. The publishable key is public; use no other key there.
-4. Configure server-side function secrets: `AI_GENERATION_ENABLED` (`true` only after a budget is approved), `AI_API_BASE`, `AI_API_KEY`, `AI_MODEL`, `APP_URL`, `APP_ALLOWED_ORIGIN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, and `TELEGRAM_WEBHOOK_SECRET`. The Supabase runtime supplies its own URL and keys.
+4. Configure server-side function secrets: `AI_GENERATION_ENABLED` (`true` only after a budget is approved), `AI_API_BASE`, `AI_API_KEY`, `AI_MODEL`, `APP_URL`, `APP_ALLOWED_ORIGIN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, and `TELEGRAM_WEBHOOK_SECRET`. The Supabase runtime supplies its own URL and keys. Copy `supabase/.env.example` to `supabase/.env`, fill it, and apply it with `supabase secrets set --env-file supabase/.env` (never commit `supabase/.env`). For River AI use `AI_API_BASE=https://api.river.ai/v1`.
 5. Deploy `ai-generate`, `telegram-link`, and `telegram-webhook`. Confirm the webhook function has platform JWT verification disabled and the handler's Telegram secret check enabled.
 6. Set the Telegram HTTPS webhook using Bot API `setWebhook` and its `secret_token` option. Keep the bot-token-containing request URL out of shell history, screenshots, and logs.
 
